@@ -1,6 +1,16 @@
 # modular-video-clipping-system
 MVCS
 
+## Development/Installation
+
+Install mvcs and its dependencies:
+
+    $ poetry install
+
+Run tests and code analysis:
+
+    $ poetry run pytest --mypy --pylint
+
 ## TODO
 ### Short Term
 [X] Create Repo and start collab.
