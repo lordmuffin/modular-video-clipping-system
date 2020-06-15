@@ -200,33 +200,6 @@ class Clip(NamedTuple):
         except subprocess.CalledProcessError as ex:
             raise Error(ex)
 
-# Data about the full set of videos and clips to produce from them.
-JobType = TypeVar("JobType", bound="Job")
-class Job(NamedTuple):
-    # Directory where the clips should be written to.
-    output_dir: Path
-    # Directory where the source videos can be found.
-    video_dir: Path
-    # List of videos to create clips from.
-    videos: List[Video]
-
-    # Create a `Job` from an untyped `dict` (YAML deserialization result).
-    @classmethod
-    def from_yaml_file(cls: Type[JobType], path: Path) -> JobType:
-        with path.open(encoding="utf-8") as file:
-            data = yaml.safe_load(file)
-
-        return cls(
-            output_dir=Path(data.get("output-dir", ".")),
-            video_dir=Path(data.get("video-dir", ".")),
-            videos=[Video.from_dict(video) for video in data.get("videos", [])],
-        )
-
-    # Run the batch job and create all requested clips.
-    def run(self):
-        for video in self.videos:
-            video.write_clips(self.video_dir, self.output_dir)
-
 # Data about an OBS capture video and clips to create from it.
 VideoType = TypeVar("VideoType", bound="Video")
 class Video(NamedTuple):
@@ -258,6 +231,33 @@ class Video(NamedTuple):
         for clip in self.clips:
             dst = dst_dir / clip.path_str(self.date, self.epoch, self.title)
             clip.write(src, dst)
+
+# Data about the full set of videos and clips to produce from them.
+JobType = TypeVar("JobType", bound="Job")
+class Job(NamedTuple):
+    # Directory where the clips should be written to.
+    output_dir: Path
+    # Directory where the source videos can be found.
+    video_dir: Path
+    # List of videos to create clips from.
+    videos: List[Video]
+
+    # Create a `Job` from an untyped `dict` (YAML deserialization result).
+    @classmethod
+    def from_yaml_file(cls: Type[JobType], path: Path) -> JobType:
+        with path.open(encoding="utf-8") as file:
+            data = yaml.safe_load(file)
+
+        return cls(
+            output_dir=Path(data.get("output-dir", ".")),
+            video_dir=Path(data.get("video-dir", ".")),
+            videos=[Video.from_dict(video) for video in data.get("videos", [])],
+        )
+
+    # Run the batch job and create all requested clips.
+    def run(self):
+        for video in self.videos:
+            video.write_clips(self.video_dir, self.output_dir)
 
 #==============================================================================
 # Main script
