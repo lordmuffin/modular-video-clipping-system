@@ -64,15 +64,13 @@
 # virtual start time of the video, and the relative timestamp of each clip also
 # accounts for the epoch (but will never be negative).
 
-from __future__ import annotations
-
 import datetime
 import getopt
 import re
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, Dict, List, NamedTuple, Type, TypeVar
 
 import yaml
 
@@ -83,12 +81,13 @@ class Error(Exception): pass
 #==============================================================================
 
 # Command-line configuration.
+ConfigType = TypeVar("ConfigType", bound="Config")
 class Config(NamedTuple):
     job_path: Path
 
     # Get configuration by parsing the program arguments.
     @classmethod
-    def from_argv(cls: Config, argv: List[str]) -> Config:
+    def from_argv(cls: Type[ConfigType], argv: List[str]) -> ConfigType:
         config = {
             "job_path": Path("clip.yaml"),
         }
@@ -152,6 +151,7 @@ def timedelta_to_path_str(t: datetime.timedelta) -> str:
     return f"{hours}h{minutes:02}m{seconds:02}s"
 
 # Data about a single video clip that should be created.
+ClipType = TypeVar("ClipType", bound="Clip")
 class Clip(NamedTuple):
     # Source video timestamp for the end of the clip.
     end: datetime.timedelta
@@ -162,7 +162,7 @@ class Clip(NamedTuple):
 
     # Create a `Clip` from an untyped `dict` (YAML deserialization result).
     @classmethod
-    def from_dict(cls: Clip, data: Dict[str, Any]) -> Clip:
+    def from_dict(cls: Type[ClipType], data: Dict[str, Any]) -> ClipType:
         (start, end) = (timedelta_from_str(t.strip()) for t in data["time"].split("-", maxsplit=1))
         clip = {
             "end": end,
@@ -201,6 +201,7 @@ class Clip(NamedTuple):
             raise Error(ex)
 
 # Data about the full set of videos and clips to produce from them.
+JobType = TypeVar("JobType", bound="Job")
 class Job(NamedTuple):
     # Directory where the clips should be written to.
     output_dir: Path
@@ -211,7 +212,7 @@ class Job(NamedTuple):
 
     # Create a `Job` from an untyped `dict` (YAML deserialization result).
     @classmethod
-    def from_yaml_file(cls: Job, path: Path) -> Job:
+    def from_yaml_file(cls: Type[JobType], path: Path) -> JobType:
         with path.open(encoding="utf-8") as file:
             data = yaml.safe_load(file)
 
@@ -227,6 +228,7 @@ class Job(NamedTuple):
             video.write_clips(self.video_dir, self.output_dir)
 
 # Data about an OBS capture video and clips to create from it.
+VideoType = TypeVar("VideoType", bound="Video")
 class Video(NamedTuple):
     # List of clips to create from the video.
     clips: List[Clip]
@@ -239,8 +241,8 @@ class Video(NamedTuple):
 
     # Create a `Video` from an untyped `dict` (YAML deserialization result).
     @classmethod
-    def from_dict(cls: Video, data: Dict[str, Any]) -> Video:
-        return Video(
+    def from_dict(cls: Type[VideoType], data: Dict[str, Any]) -> VideoType:
+        return cls(
             clips=[Clip.from_dict(clip) for clip in data.get("clips", [])],
             date=datetime_from_str(str(data["date"])),
             epoch=timedelta_from_str(str(data.get("epoch", 0))),
