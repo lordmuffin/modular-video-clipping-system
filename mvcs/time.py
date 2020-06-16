@@ -24,17 +24,22 @@ def timedelta_from_str(td_s: str) -> datetime.timedelta:
         s_positive = td_s
         sign_factor = 1
 
-    for fmt in ("%H:%M:%S", "%M:%S", "%S"):
-        try:
-            dt_parsed = datetime.datetime.strptime(s_positive, fmt)
-            return sign_factor * datetime.timedelta(
-                hours=dt_parsed.hour,
-                minutes=dt_parsed.minute,
-                seconds=dt_parsed.second,
-            )
-        except ValueError:
-            pass
-    raise Error(f"error parsing timedelta: {td_s}")
+    try:
+        parts = [int(x) for x in s_positive.rsplit(":", maxsplit=2)]
+        parts.reverse()
+    except ValueError:
+        raise Error(f"error parsing timedelta: {td_s}")
+
+    for part in parts:
+        if part < 0:
+            raise Error(f"error parsing timedelta: {td_s}")
+
+    get_part = lambda x: parts[x] if len(parts) > x else 0
+    return sign_factor * datetime.timedelta(
+        hours=get_part(2),
+        minutes=get_part(1),
+        seconds=get_part(0),
+    )
 
 def timedelta_to_path_str(delta_t: datetime.timedelta) -> str:
     "Get a filename-safe version of a `datetime.timedelta` object."

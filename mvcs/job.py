@@ -26,17 +26,21 @@ class Clip(NamedTuple):
     def from_dict(cls: Type[ClipType], data: Dict[str, Any]) -> ClipType:
         "Create a `Clip` from an untyped `dict` (YAML deserialization result)."
 
-        (start, end) = (timedelta_from_str(t.strip()) for t in data["time"].split("-", maxsplit=1))
-        clip = {
-            "end": end,
-            "start": start,
-            "title": data["title"],
-        }
+        try:
+            time = str(data["time"])
+            title = str(data["title"])
+            time_parts = [timedelta_from_str(t.strip()) for t in time.split("-", maxsplit=1)]
+            (start, end) = time_parts
+        except (KeyError, ValueError) as ex:
+            raise Error(f"bad clip data: {ex}: {data}")
 
-        if clip["end"] <= clip["start"]:
-            raise Error(f"bad clip start/end: {clip}")
+        if end <= start:
+            raise Error(f"bad clip start/end: {data}")
 
-        return cls(**clip)
+        if not title:
+            raise Error(f"bad clip title: {data}")
+
+        return cls(end=end, start=start, title=title)
 
     def path_str(self, date: datetime.datetime, epoch: datetime.timedelta, title: str) -> str:
         "Get the file name for a clip."
@@ -82,11 +86,25 @@ class Video(NamedTuple):
     def from_dict(cls: Type[VideoType], data: Dict[str, Any]) -> VideoType:
         "Create a `Video` from an untyped `dict` (YAML deserialization result)."
 
+        clips = data.get("clips", [])
+        if not isinstance(clips, list):
+            raise Error(f"invalid clips: {clips}")
+
+        for clip in clips:
+            if not isinstance(clip, dict):
+                raise Error(f"invalid clips entry: {clip}")
+
+        try:
+            date = datetime_from_str(str(data["date"]))
+            title = str(data["title"])
+        except KeyError as ex:
+            raise Error(f"bad video data: {ex}: {data}")
+
         return cls(
-            clips=[Clip.from_dict(clip) for clip in data.get("clips", [])],
-            date=datetime_from_str(str(data["date"])),
+            clips=[Clip.from_dict(clip) for clip in clips],
+            date=date,
             epoch=timedelta_from_str(str(data.get("epoch", 0))),
-            title=data["title"],
+            title=title,
         )
 
     def write_clips(self, src_dir: Path, dst_dir: Path):
@@ -112,17 +130,29 @@ class Job(NamedTuple):
     videos: List[Video]
 
     @classmethod
-    def from_yaml_file(cls: Type[JobType], path: Path) -> JobType:
+    def from_dict(cls: Type[JobType], data: Dict[str, Any]) -> JobType:
         "Create a `Job` from an untyped `dict` (YAML deserialization result)."
 
-        with path.open(encoding="utf-8") as file:
-            data = yaml.safe_load(file)
+        videos = data.get("videos", [])
+        if not isinstance(videos, list):
+            raise Error(f"invalid videos: {videos}")
+
+        for video in videos:
+            if not isinstance(video, dict):
+                raise Error(f"invalid video entry: {video}")
 
         return cls(
-            output_dir=Path(data.get("output-dir", ".")),
-            video_dir=Path(data.get("video-dir", ".")),
-            videos=[Video.from_dict(video) for video in data.get("videos", [])],
+            output_dir=Path(str(data.get("output-dir", "."))),
+            video_dir=Path(str(data.get("video-dir", "."))),
+            videos=[Video.from_dict(video) for video in videos],
         )
+
+    @classmethod
+    def from_yaml_file(cls: Type[JobType], path: Path) -> JobType:
+        "Create a `Job` from a YAML file."
+
+        with path.open(encoding="utf-8") as file:
+            return cls.from_dict(yaml.safe_load(file))
 
     def run(self):
         "Run the batch job and create all requested clips."

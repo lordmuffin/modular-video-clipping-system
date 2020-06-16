@@ -30,7 +30,10 @@ class Config(NamedTuple):
 
         for opt, optarg in opts:
             if opt in ("-j", "--job-path"):
-                config["job_path"] = Path(optarg)
+                if optarg:
+                    config["job_path"] = Path(optarg)
+                else:
+                    raise Error("job path cannot be empty")
             else:
                 raise Error(f"unhandled option: {opt}")
 
