@@ -27,6 +27,7 @@ def test_config_from_argv_job_path_invalid(path):
         Config.from_argv(["", "--job-path", path])
 
 @pytest.mark.parametrize("subcommand_str,expected", [
+    ("clip", Subcommand.CLIP),
     ("help", Subcommand.HELP),
     ("run", Subcommand.RUN),
 ])

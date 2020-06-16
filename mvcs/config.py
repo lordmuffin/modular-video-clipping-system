@@ -11,6 +11,8 @@ from mvcs.error import Error
 class Subcommand(enum.Enum):
     "Subcommand for selecting program execution type."
 
+    # Add a new clip to the job file.
+    CLIP = enum.auto()
     # Show program usage and exit.
     HELP = enum.auto()
     # Run the job file to process videos and produce clips.
@@ -54,6 +56,7 @@ class Config(NamedTuple):
         if args:
             try:
                 subcommand = {
+                    "clip": Subcommand.CLIP,
                     "help": Subcommand.HELP,
                     "run": Subcommand.RUN,
                 }[args[0].lower()]

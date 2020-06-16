@@ -7,6 +7,18 @@ from typing import List, Optional
 
 import mvcs
 
+def handle_clip(_config: mvcs.Config):
+    "Handle the clip subcommand."
+
+    mvcs.gen.check_template("test.yaml")
+    latest = mvcs.gen.latest_video(mvcs.gen.current_time("%CCYY-%MM-%DD_%hh-%mm-%ss"), ".mp4", "./")
+    mvcs.gen.add_clip(
+        "test.yaml",
+        latest,
+        mvcs.gen.current_time("%CCYY-%MM-%DD_%hh-%mm-%ss"),
+        "CLIP IT!",
+    )
+
 def handle_help(_config: mvcs.Config):
     "Handle the help subcommand."
 
@@ -23,6 +35,7 @@ def handle_help(_config: mvcs.Config):
             "        Path to the clipping job YAML file (default: clip.yaml)",
             "",
             "SUBCOMMANDS:",
+            "    clip    Add a new clip to the job file",
             "    help    Print usage information",
             "    run     Run the job file to process videos and produce clips",
     ):
@@ -44,6 +57,7 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         # Dispatch subcommand handler
         {
+            mvcs.Subcommand.CLIP: handle_clip,
             mvcs.Subcommand.HELP: handle_help,
             mvcs.Subcommand.RUN: handle_run,
         }[config.subcommand](config)
