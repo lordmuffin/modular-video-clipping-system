@@ -67,13 +67,14 @@ accounts for the epoch (but will never be negative).
 """
 
 import sys
-from typing import List
+from typing import List, Optional
 
 import mvcs
 
-def main(argv: List[str]) -> int:
+def main(argv: Optional[List[str]] = None) -> int:
     "Main entrypoint."
 
+    argv = argv if argv is not None else sys.argv
     try:
         # Get configuration from command-line arguments
         config = mvcs.Config.from_argv(argv)
@@ -87,4 +88,4 @@ def main(argv: List[str]) -> int:
     return 0
 
 if __name__ == "__main__":
-    sys.exit(main(sys.argv))
+    sys.exit(main())
