@@ -111,7 +111,7 @@ def add_video(document, date_time, epoch, title):
 
     contents['videos'].append(data)
     print("After: ", contents)
-    
+
     with open(document, "w") as f:
         yaml.safe_dump(contents, f)
 
@@ -129,11 +129,6 @@ def add_clip(document, latest_video, current_time, title):
             print("Before: ", str(item))
             item['clips'].append(data)
             print("After: ", str(item))
-    
+
     with open(document, "w") as f:
         yaml.safe_dump(contents, f)
-
-check_template("test.yaml")
-latest = latest_video(current_time("%CCYY-%MM-%DD_%hh-%mm-%ss"), ".mp4", "./")
-# add_video("test.yaml", latest, 0, "Blah")
-add_clip("test.yaml", latest, current_time("%CCYY-%MM-%DD_%hh-%mm-%ss"), "CLIP IT!")
