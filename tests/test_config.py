@@ -4,13 +4,20 @@ from pathlib import Path
 
 import pytest # type: ignore
 
-from mvcs.config import Config, Subcommand
+from mvcs.config import Config, Prefs, Subcommand
 from mvcs.error import Error
 
-def test_config_from_argv_defaults():
+@pytest.mark.parametrize("prefs_data", [
+    # The default preferences are used when none is provided
+    {},
+    # The default config respects user preferences when provided
+    {"job-path": "/dev/null"},
+])
+def test_config_from_argv_defaults(prefs_data):
     "A default config is returned when no command-line arguments are given."
-    config = Config.from_argv([])
-    assert config.job_path is not None and bool(config.job_path)
+    prefs = Prefs.from_dict(prefs_data)
+    config = Config.from_argv([], prefs=prefs)
+    assert config.job_path == prefs.job_path
     assert config.subcommand == Subcommand.HELP
 
 @pytest.mark.parametrize("opt", ["-j", "--job-path"])
@@ -41,3 +48,28 @@ def test_config_from_argv_subcommand_invalid(subcommand_str):
     "Invalid subcommands are rejected."
     with pytest.raises(Error):
         Config.from_argv(["", subcommand_str])
+
+@pytest.mark.parametrize("data,expected", [
+    # Default preferences from an empty dict
+    ({}, Prefs(job_path=Path("clip.yaml"))),
+    # Valid values override defaults
+    (
+        {
+            "job-path": "/dev/null",
+        },
+        Prefs(job_path=Path("/dev/null")),
+    ),
+])
+def test_prefs_from_dict(data, expected):
+    "User preferences are deserialized from dicts correctly."
+    prefs = Prefs.from_dict(data)
+    assert prefs == expected
+
+@pytest.mark.parametrize("data", [
+    # Unknown preferences are invalid
+    {"not-a-real-pref": "test"},
+])
+def test_prefs_from_dict_invalid(data):
+    "Invalid user preferences are rejected."
+    with pytest.raises(Error):
+        Prefs.from_dict(data)

@@ -3,9 +3,47 @@
 import enum
 import getopt
 from pathlib import Path
-from typing import List, NamedTuple, Type, TypeVar
+from typing import Any, Dict, List, NamedTuple, Optional, Type, TypeVar
+
+import yaml
 
 from mvcs.error import Error
+
+PrefsType = TypeVar("PrefsType", bound="Prefs")
+class Prefs(NamedTuple):
+    "User preferences to choose default behavior."
+
+    # Default path to the job file.
+    job_path: Path
+
+    @classmethod
+    def dict_key(cls: Type[PrefsType], field: str) -> str:
+        "Get the untyped `dict` key name for a `Prefs` field."
+        try:
+            return {
+                "job_path": "job-path",
+            }[field]
+        except KeyError:
+            raise Error(f"invalid field: {field}")
+
+    @classmethod
+    def from_dict(cls: Type[PrefsType], data: Dict[str, Any]) -> PrefsType:
+        "Create `Prefs` from an untyped `dict` (YAML deserialization result)."
+
+        job_path = Path(str(data.get(cls.dict_key("job_path"), "clip.yaml")))
+
+        unknown_keys = set(data.keys()) - set(cls.dict_key(k) for k in cls._fields)
+        if unknown_keys:
+            raise Error(f"unknown preferences: {unknown_keys}")
+
+        return cls(job_path=job_path)
+
+    @classmethod
+    def from_yaml_file(cls: Type[PrefsType], path: Path) -> PrefsType:
+        "Create a `Prefs` from a YAML file."
+
+        with path.open(encoding="utf-8") as file:
+            return cls.from_dict(yaml.safe_load(file))
 
 @enum.unique
 class Subcommand(enum.Enum):
@@ -28,10 +66,18 @@ class Config(NamedTuple):
     subcommand: Subcommand
 
     @classmethod
-    def from_argv(cls: Type[ConfigType], argv: List[str]) -> ConfigType:
+    def from_argv(
+            cls: Type[ConfigType],
+            argv: List[str],
+            *,
+            prefs: Optional[Prefs] = None,
+    ) -> ConfigType:
         "Get configuration by parsing the program arguments."
 
-        job_path = Path("clip.yaml")
+        # Use default preferences if not provided
+        prefs = prefs if prefs is not None else Prefs.from_dict({})
+
+        job_path = prefs.job_path
         subcommand = Subcommand.HELP
 
         try:

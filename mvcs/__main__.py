@@ -3,6 +3,7 @@
 "Create clips from OBS captures using ffmpeg and YAML."
 
 import sys
+from pathlib import Path
 from typing import List, Optional
 
 import mvcs
@@ -19,7 +20,7 @@ def handle_clip(_config: mvcs.Config):
         "CLIP IT!",
     )
 
-def handle_help(_config: mvcs.Config):
+def handle_help(config: mvcs.Config):
     "Handle the help subcommand."
 
     for line in (
@@ -32,7 +33,7 @@ def handle_help(_config: mvcs.Config):
             "    -h, --help",
             "        Print usage information",
             "    -j, --job-path <PATH>",
-            "        Path to the clipping job YAML file (default: clip.yaml)",
+            f"        Path to the clipping job YAML file (default: {config.job_path})",
             "",
             "SUBCOMMANDS:",
             "    clip    Add a new clip to the job file",
@@ -52,8 +53,12 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     argv = argv if argv is not None else sys.argv
     try:
+        # Get user preferences
+        prefs_path = Path("~/.config/mvcs/prefs.yaml").expanduser()
+        prefs = mvcs.Prefs.from_yaml_file(prefs_path) if prefs_path.is_file() else None
+
         # Get configuration from command-line arguments
-        config = mvcs.Config.from_argv(argv)
+        config = mvcs.Config.from_argv(argv, prefs=prefs)
 
         # Dispatch subcommand handler
         {

@@ -71,11 +71,21 @@ Note the timestamp used in the output filename reflects the epoch-adjusted
 virtual start time of the video, and the relative timestamp of each clip also
 accounts for the epoch (but will never be negative).
 
+## User preferences (defaults)
+
+You can create `~/.config/mvcs/prefs.yaml` to configure the default behavior of
+the program. Command-line options take precedence over values defined in the
+preferences file. Here is a commented example `prefs.yaml` with all defaults
+values:
+
+    # Default path to the clip.yaml (absolute or relative paths are fine)
+    job-path: "clip.yaml"
+
 ## TODO
 ### Short Term
 [X] Create Repo and start collab.
 
-[ ] user preferences via a yaml config (e.g. ~/.config/mvcs/config.yaml)
+[X] user preferences via a yaml config (e.g. ~/.config/mvcs/config.yaml)
 
 [ ] smart detection of existing clips, if you happen to run a playbook twice, it shouldn't overwrite (or prompt you to overwrite) your existing clip, it should skip it
 
