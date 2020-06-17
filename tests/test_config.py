@@ -7,17 +7,23 @@ import pytest # type: ignore
 from mvcs.config import Config, Prefs, Subcommand
 from mvcs.error import Error
 
-@pytest.mark.parametrize("prefs_data", [
+@pytest.mark.parametrize("prefs,expected", [
     # The default preferences are used when none is provided
-    {},
+    (None, Prefs()),
     # The default config respects user preferences when provided
-    {"job-path": "/dev/null"},
+    (
+        Prefs(
+            job_path=Path("/dev/null"),
+        ),
+        Prefs(
+            job_path=Path("/dev/null"),
+        ),
+    ),
 ])
-def test_config_from_argv_defaults(prefs_data):
+def test_config_from_argv_defaults(prefs, expected):
     "A default config is returned when no command-line arguments are given."
-    prefs = Prefs.from_dict(prefs_data)
     config = Config.from_argv([], prefs=prefs)
-    assert config.job_path == prefs.job_path
+    assert config.job_path == expected.job_path
     assert config.subcommand == Subcommand.HELP
 
 @pytest.mark.parametrize("opt", ["-j", "--job-path"])
@@ -51,7 +57,7 @@ def test_config_from_argv_subcommand_invalid(subcommand_str):
 
 @pytest.mark.parametrize("data,expected", [
     # Default preferences from an empty dict
-    ({}, Prefs(job_path=Path("clip.yaml"))),
+    ({}, Prefs()),
     # Valid values override defaults
     (
         {

@@ -171,24 +171,14 @@ def test_clip_path_str(clip, date, epoch, title, expected):
             "date": "1970-01-01T00:00:00",
             "title": "test",
         },
-        Video(
-            clips=[],
-            date=datetime.datetime(1970, 1, 1),
-            epoch=datetime.timedelta(),
-            title="test",
-        ),
+        Video(date=datetime.datetime(1970, 1, 1), title="test"),
     ),
     (
         {
             "date": "1970-01-01T00:00:00",
             "title": "test",
         },
-        Video(
-            clips=[],
-            date=datetime.datetime(1970, 1, 1),
-            epoch=datetime.timedelta(),
-            title="test",
-        ),
+        Video(date=datetime.datetime(1970, 1, 1), title="test"),
     ),
 ])
 def test_video_from_dict(data, expected):
@@ -242,29 +232,15 @@ def test_video_from_dict_invalid(data):
             output_dir=Path("/foo/bar"),
             video_dir=Path("baz/qux"),
             videos=[
-                Video(
-                    clips=[],
-                    date=datetime.datetime(1970, 1, 1),
-                    epoch=datetime.timedelta(),
-                    title="test1",
-                ),
-                Video(
-                    clips=[],
-                    date=datetime.datetime(1970, 1, 2),
-                    epoch=datetime.timedelta(),
-                    title="test2",
-                ),
+                Video(date=datetime.datetime(1970, 1, 1), title="test1"),
+                Video(date=datetime.datetime(1970, 1, 2), title="test2"),
             ],
         ),
     ),
     # All fields are optional
     (
         {},
-        Job(
-            output_dir=Path("."),
-            video_dir=Path("."),
-            videos=[],
-        ),
+        Job(output_dir=Path("."), video_dir=Path(".")),
     ),
 ])
 def test_job_from_dict(data, expected):

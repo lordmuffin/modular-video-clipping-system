@@ -14,7 +14,7 @@ class Prefs(NamedTuple):
     "User preferences to choose default behavior."
 
     # Default path to the job file.
-    job_path: Path
+    job_path: Path = Path("clip.yaml")
 
     @classmethod
     def dict_key(cls: Type[PrefsType], field: str) -> str:
@@ -30,13 +30,20 @@ class Prefs(NamedTuple):
     def from_dict(cls: Type[PrefsType], data: Dict[str, Any]) -> PrefsType:
         "Create `Prefs` from an untyped `dict` (YAML deserialization result)."
 
-        job_path = Path(str(data.get(cls.dict_key("job_path"), "clip.yaml")))
+        prefs = {}
+        # pylint: disable=unnecessary-lambda
+        for (field, value_fn) in (
+                ("job_path", lambda x: Path(str(x))),
+        ):
+            key = cls.dict_key(field)
+            if key in data:
+                prefs[field] = value_fn(data[key])
 
         unknown_keys = set(data.keys()) - set(cls.dict_key(k) for k in cls._fields)
         if unknown_keys:
             raise Error(f"unknown preferences: {unknown_keys}")
 
-        return cls(job_path=job_path)
+        return cls(**prefs) # type: ignore
 
     @classmethod
     def from_yaml_file(cls: Type[PrefsType], path: Path) -> PrefsType:
@@ -63,7 +70,7 @@ class Config(NamedTuple):
     # Path to the clip.yaml job file.
     job_path: Path
     # mvcs subcommand.
-    subcommand: Subcommand
+    subcommand: Subcommand = Subcommand.HELP
 
     @classmethod
     def from_argv(
@@ -77,8 +84,9 @@ class Config(NamedTuple):
         # Use default preferences if not provided
         prefs = prefs if prefs is not None else Prefs.from_dict({})
 
-        job_path = prefs.job_path
-        subcommand = Subcommand.HELP
+        config: Dict[str, Any] = {
+            "job_path": prefs.job_path,
+        }
 
         try:
             opts, args = getopt.getopt(argv[1:], "hj:", longopts=[
@@ -88,25 +96,25 @@ class Config(NamedTuple):
         except getopt.GetoptError as ex:
             raise Error(ex)
 
+        if args:
+            subcommand = {
+                "clip": Subcommand.CLIP,
+                "help": Subcommand.HELP,
+                "run": Subcommand.RUN,
+            }.get(args[0].lower())
+            if subcommand is None:
+                raise Error(f"invalid subcommand: {args[0]}")
+            config["subcommand"] = subcommand
+
         for opt, optarg in opts:
             if opt in ("-h", "--help"):
-                subcommand = Subcommand.HELP
+                config["subcommand"] = Subcommand.HELP
             elif opt in ("-j", "--job-path"):
                 if optarg:
-                    job_path = Path(optarg)
+                    config["job_path"] = Path(optarg)
                 else:
                     raise Error("job path cannot be empty")
             else:
                 raise Error(f"unhandled option: {opt}")
 
-        if args:
-            try:
-                subcommand = {
-                    "clip": Subcommand.CLIP,
-                    "help": Subcommand.HELP,
-                    "run": Subcommand.RUN,
-                }[args[0].lower()]
-            except KeyError:
-                raise Error(f"invalid subcommand: {args[0]}")
-
-        return cls(job_path=job_path, subcommand=subcommand)
+        return cls(**config) # type: ignore

@@ -27,20 +27,21 @@ class Clip(NamedTuple):
         "Create a `Clip` from an untyped `dict` (YAML deserialization result)."
 
         try:
-            time = str(data["time"])
-            title = str(data["title"])
-            time_parts = [timedelta_from_str(t.strip()) for t in time.split("-", maxsplit=1)]
-            (start, end) = time_parts
+            clip: Dict[str, Any] = {
+                "title": str(data["title"]),
+            }
+            time = [timedelta_from_str(t.strip()) for t in str(data["time"]).split("-", maxsplit=1)]
+            (clip["start"], clip["end"]) = time
         except (KeyError, ValueError) as ex:
             raise Error(f"bad clip data: {ex}: {data}")
 
-        if end <= start:
+        if clip["end"] <= clip["start"]:
             raise Error(f"bad clip start/end: {data}")
 
-        if not title:
+        if not clip["title"]:
             raise Error(f"bad clip title: {data}")
 
-        return cls(end=end, start=start, title=title)
+        return cls(**clip) # type: ignore
 
     def path_str(self, date: datetime.datetime, epoch: datetime.timedelta, title: str) -> str:
         "Get the file name for a clip."
@@ -73,39 +74,47 @@ VideoType = TypeVar("VideoType", bound="Video")
 class Video(NamedTuple):
     "Data about an OBS capture video and clips to create from it."
 
-    # List of clips to create from the video.
-    clips: List[Clip]
     # Video timestamp (recording start time)
     date: datetime.datetime
-    # Virtual "start" time in the source video (for output filename)
-    epoch: datetime.timedelta
     # Base title used for all clips from this video.
     title: str
+    # List of clips to create from the video.
+    clips: List[Clip] = []
+    # Virtual "start" time in the source video (for output filename)
+    epoch: datetime.timedelta = datetime.timedelta()
 
     @classmethod
     def from_dict(cls: Type[VideoType], data: Dict[str, Any]) -> VideoType:
         "Create a `Video` from an untyped `dict` (YAML deserialization result)."
 
-        clips = data.get("clips", [])
-        if not isinstance(clips, list):
-            raise Error(f"invalid clips: {clips}")
-
-        for clip in clips:
-            if not isinstance(clip, dict):
-                raise Error(f"invalid clips entry: {clip}")
-
         try:
-            date = datetime_from_str(str(data["date"]))
-            title = str(data["title"])
+            video: Dict[str, Any] = {
+                "date": datetime_from_str(str(data["date"])),
+                "title": str(data["title"])
+            }
         except KeyError as ex:
             raise Error(f"bad video data: {ex}: {data}")
 
-        return cls(
-            clips=[Clip.from_dict(clip) for clip in clips],
-            date=date,
-            epoch=timedelta_from_str(str(data.get("epoch", 0))),
-            title=title,
-        )
+        for (key, validate_fn, value_fn) in (
+                (
+                    "clips",
+                    lambda xs: isinstance(xs, list) \
+                            and not [x for x in xs if not isinstance(x, dict)],
+                    lambda xs: [Clip.from_dict(x) for x in xs],
+                ),
+                (
+                    "epoch",
+                    lambda x: True,
+                    lambda x: timedelta_from_str(str(x)),
+                ),
+        ):
+            if key in data:
+                value = data[key]
+                if not validate_fn(value):
+                    raise Error(f"bad video data: {key}: {value}")
+                video[key] = value_fn(value)
+
+        return cls(**video) # type: ignore
 
     def write_clips(self, src_dir: Path, dst_dir: Path):
         "Create all requested clips from the video."
@@ -127,7 +136,7 @@ class Job(NamedTuple):
     # Directory where the source videos can be found.
     video_dir: Path
     # List of videos to create clips from.
-    videos: List[Video]
+    videos: List[Video] = []
 
     @classmethod
     def from_dict(cls: Type[JobType], data: Dict[str, Any]) -> JobType:
