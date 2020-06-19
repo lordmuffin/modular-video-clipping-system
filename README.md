@@ -78,6 +78,9 @@ the program. Command-line options take precedence over values defined in the
 preferences file. Here is a commented example `prefs.yaml` with all defaults
 values:
 
+    # String replacement map for input and output filenames
+    filename-replace: {}
+
     # Default path to the clip.yaml (absolute or relative paths are fine)
     job-path: "clip.yaml"
 

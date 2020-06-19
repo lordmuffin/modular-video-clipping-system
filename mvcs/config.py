@@ -2,6 +2,7 @@
 
 import enum
 import getopt
+from collections import UserDict
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Type, TypeVar
 
@@ -9,10 +10,29 @@ import yaml
 
 from mvcs.error import Error
 
+ReplaceType = TypeVar("ReplaceType", bound="Replace")
+class Replace(UserDict): # pylint: disable=too-many-ancestors
+    "String replacement mapping."
+
+    @classmethod
+    def from_dict(cls: Type[ReplaceType], data: Dict[str, str]) -> ReplaceType:
+        "Create `Replace` from an untyped `dict` (YAML deserialization result)."
+
+        # Mostly arbitrary key-value string pairs are allowed
+        for (key, value) in data.items():
+            if not isinstance(key, str) or not isinstance(value, str):
+                raise Error(f"bad mapping: {key}: {value}")
+            if not key:
+                raise Error(f"mapping key cannot be empty: {key}: {value}")
+
+        return cls(data)
+
 PrefsType = TypeVar("PrefsType", bound="Prefs")
 class Prefs(NamedTuple):
     "User preferences to choose default behavior."
 
+    # String replacement map for input and output filenames.
+    filename_replace: Replace = Replace()
     # Default path to the job file.
     job_path: Path = Path("clip.yaml")
 
@@ -21,6 +41,7 @@ class Prefs(NamedTuple):
         "Get the untyped `dict` key name for a `Prefs` field."
         try:
             return {
+                "filename_replace": "filename-replace",
                 "job_path": "job-path",
             }[field]
         except KeyError:
@@ -34,6 +55,7 @@ class Prefs(NamedTuple):
         # pylint: disable=unnecessary-lambda
         for (field, value_fn) in (
                 ("job_path", lambda x: Path(str(x))),
+                ("filename_replace", lambda x: Replace.from_dict(x)),
         ):
             key = cls.dict_key(field)
             if key in data:
@@ -50,7 +72,12 @@ class Prefs(NamedTuple):
         "Create a `Prefs` from a YAML file."
 
         with path.open(encoding="utf-8") as file:
-            return cls.from_dict(yaml.safe_load(file))
+            data = yaml.safe_load(file)
+            if data is None:
+                return cls()
+            if isinstance(data, dict):
+                return cls.from_dict(data)
+            raise Error(f"invalid prefs file: {data}")
 
 @enum.unique
 class Subcommand(enum.Enum):
@@ -69,10 +96,13 @@ class Config(NamedTuple):
 
     # Path to the clip.yaml job file.
     job_path: Path
+    # String replacement map for input and output filenames.
+    filename_replace: Replace
     # mvcs subcommand.
     subcommand: Subcommand = Subcommand.HELP
 
     @classmethod
+    # pylint: disable=too-many-branches
     def from_argv(
             cls: Type[ConfigType],
             argv: List[str],
@@ -82,14 +112,16 @@ class Config(NamedTuple):
         "Get configuration by parsing the program arguments."
 
         # Use default preferences if not provided
-        prefs = prefs if prefs is not None else Prefs.from_dict({})
+        prefs = prefs if prefs is not None else Prefs()
 
         config: Dict[str, Any] = {
             "job_path": prefs.job_path,
+            "filename_replace": Replace(prefs.filename_replace),
         }
 
         try:
-            opts, args = getopt.getopt(argv[1:], "hj:", longopts=[
+            opts, args = getopt.getopt(argv[1:], "hj:r:", longopts=[
+                "filename-replace=",
                 "help",
                 "job-path=",
             ])
@@ -114,6 +146,19 @@ class Config(NamedTuple):
                     config["job_path"] = Path(optarg)
                 else:
                     raise Error("job path cannot be empty")
+            elif opt in ("-r", "--filename-replace"):
+                if optarg:
+                    if optarg.startswith("=="):
+                        config["filename_replace"]["="] = optarg[2:]
+                    elif optarg.startswith("="):
+                        raise Error(f"invalid replacement: {optarg}")
+                    elif "=" in optarg:
+                        (key, value) = optarg.split("=", maxsplit=1)
+                        config["filename_replace"][key] = value
+                    else:
+                        raise Error(f"invalid replacement: {optarg}")
+                else:
+                    config["filename_replace"] = Replace(prefs.filename_replace)
             else:
                 raise Error(f"unhandled option: {opt}")
 

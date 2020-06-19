@@ -5,6 +5,7 @@ import datetime
 
 import pytest # type: ignore
 
+from mvcs.config import Replace
 from mvcs.error import Error
 from mvcs.job import Clip, Job, Video
 
@@ -127,6 +128,15 @@ def test_clip_path_str(clip, date, epoch, title, expected):
     "Getting the filename for a clip works as expected."
     path = clip.path_str(date, epoch, title)
     assert path == expected
+
+def test_clip_path_str_replace():
+    "Filename respects replacement mapping configuration."
+    clip = Clip.from_dict({"time": "0-1", "title": "title with spaces"})
+    date = datetime.datetime(1970, 1, 1)
+    epoch = datetime.timedelta()
+    title = "test"
+    path = clip.path_str(date, epoch, title, replace=Replace({" ": "_"}))
+    assert path == "1970-01-01_00-00-00_-_t+0h00m00s_-_test_-_title_with_spaces.mkv"
 
 @pytest.mark.parametrize("data,expected", [
     # Values are deserialized into expected types

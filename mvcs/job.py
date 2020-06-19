@@ -1,13 +1,14 @@
 "Job execution module."
 
 import datetime
-import re
 import subprocess
+from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Type, TypeVar
+from typing import Any, Dict, List, NamedTuple, Optional, Type, TypeVar
 
 import yaml
 
+from mvcs.config import Config, Replace
 from mvcs.error import Error
 from mvcs.time import datetime_from_str, timedelta_from_str, timedelta_to_path_str
 
@@ -43,13 +44,28 @@ class Clip(NamedTuple):
 
         return cls(**clip) # type: ignore
 
-    def path_str(self, date: datetime.datetime, epoch: datetime.timedelta, title: str) -> str:
+    def path_str(
+            self,
+            date: datetime.datetime,
+            epoch: datetime.timedelta,
+            title: str,
+            *,
+            replace: Optional[Replace] = None,
+    ) -> str:
         "Get the file name for a clip."
 
-        date_str = (date + epoch).strftime("%Y-%m-%d %H:%M:%S")
-        start_str = timedelta_to_path_str(self.start - epoch)
-        path_str = f"{date_str} - T+{start_str} - {title} - {self.title}.mkv"
-        return re.sub(r"[/\:]", "-", path_str.casefold())
+        replace = Replace() if replace is None else replace
+        path_str = " - ".join((
+            (date + epoch).strftime("%Y-%m-%d %H:%M:%S"),
+            f"T+{timedelta_to_path_str(self.start - epoch)}",
+            title,
+            f"{self.title}.mkv",
+        )).casefold()
+
+        for (old, new) in chain((("/", "-"), (":", "-")), replace.items()):
+            path_str = path_str.replace(old, new)
+
+        return path_str
 
     def write(self, src: Path, dst: Path):
         "Use ffmpeg to write the lossless video clip file."
@@ -116,15 +132,24 @@ class Video(NamedTuple):
 
         return cls(**video) # type: ignore
 
-    def write_clips(self, src_dir: Path, dst_dir: Path):
+    def write_clips(self, config: Config, src_dir: Path, dst_dir: Path):
         "Create all requested clips from the video."
 
-        src = src_dir / self.date.strftime("%Y-%m-%d %H-%M-%S.mkv")
+        src_name = self.date.strftime("%Y-%m-%d %H-%M-%S.mkv")
+        for (old, new) in config.filename_replace.items():
+            src_name = src_name.replace(old, new)
+
+        src = src_dir / src_name
         if not src.is_file():
             raise Error(f"missing video file: {src}")
 
         for clip in self.clips:
-            dst = dst_dir / clip.path_str(self.date, self.epoch, self.title)
+            dst = dst_dir / clip.path_str(
+                self.date,
+                self.epoch,
+                self.title,
+                replace=config.filename_replace,
+            )
             clip.write(src, dst)
 
 JobType = TypeVar("JobType", bound="Job")
@@ -163,8 +188,8 @@ class Job(NamedTuple):
         with path.open(encoding="utf-8") as file:
             return cls.from_dict(yaml.safe_load(file))
 
-    def run(self):
+    def run(self, config: Config):
         "Run the batch job and create all requested clips."
 
         for video in self.videos:
-            video.write_clips(self.video_dir, self.output_dir)
+            video.write_clips(config, self.video_dir, self.output_dir)

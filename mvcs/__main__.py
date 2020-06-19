@@ -34,6 +34,10 @@ def handle_help(config: mvcs.Config):
             "        Print usage information",
             "    -j, --job-path <PATH>",
             f"        Path to the clipping job YAML file (default: {config.job_path})",
+            "    -r, --filename-replace <OLD>=<NEW>",
+            "        Add a mapping to replace strings in input/output filenames,",
+            "        e.g. `--filename-replace ' =_'` to replace spaces with underscores;",
+            "        pass an empty string to clear the current mappings",
             "",
             "SUBCOMMANDS:",
             "    clip    Add a new clip to the job file",
@@ -46,7 +50,7 @@ def handle_run(config: mvcs.Config):
     "Handle the run subcommand."
     # Deserialize the YAML job playbook and run it
     job = mvcs.Job.from_yaml_file(config.job_path)
-    job.run()
+    job.run(config)
 
 def main(argv: Optional[List[str]] = None) -> int:
     "Main entrypoint."
