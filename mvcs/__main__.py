@@ -20,9 +20,10 @@ def handle_clip(_config: mvcs.Config):
         "CLIP IT!",
     )
 
-def handle_help(config: mvcs.Config):
+def handle_help(_config: mvcs.Config):
     "Handle the help subcommand."
 
+    prefs = mvcs.Prefs()
     for line in (
             "mvcs - multi-video clipping system",
             "",
@@ -33,11 +34,11 @@ def handle_help(config: mvcs.Config):
             "    -h, --help",
             "        Print usage information",
             "    -i, --video-dir <PATH>",
-            f"        Path to the input video directory (default: {config.video_dir})",
+            f"        Path to the input video directory (default: {prefs.video_dir})",
             "    -j, --job-path <PATH>",
-            f"        Path to the clipping job YAML file (default: {config.job_path})",
+            f"        Path to the clipping job YAML file (default: {prefs.job_path})",
             "    -o, --output-dir <PATH>",
-            f"        Path to the output clips directory (default: {config.output_dir})",
+            f"        Path to the output clips directory (default: {prefs.output_dir})",
             "    -r, --filename-replace <OLD>=<NEW>",
             "        Add a mapping to replace strings in input/output filenames,",
             "        e.g. `--filename-replace ' =_'` to replace spaces with underscores;",
