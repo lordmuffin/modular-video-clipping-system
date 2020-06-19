@@ -15,10 +15,14 @@ from mvcs.error import Error
         Prefs(
             filename_replace=Replace({" ": "_"}),
             job_path=Path("/dev/null"),
+            output_dir=Path("/dev/null"),
+            video_dir=Path("/dev/null"),
         ),
         Prefs(
             filename_replace=Replace({" ": "_"}),
             job_path=Path("/dev/null"),
+            output_dir=Path("/dev/null"),
+            video_dir=Path("/dev/null"),
         ),
     ),
 ])
@@ -27,7 +31,9 @@ def test_config_from_argv_defaults(prefs, expected):
     config = Config.from_argv([], prefs=prefs)
     assert config.job_path == expected.job_path
     assert config.filename_replace == expected.filename_replace
+    assert config.output_dir == expected.output_dir
     assert config.subcommand == Subcommand.HELP
+    assert config.video_dir == expected.video_dir
 
 @pytest.mark.parametrize("opt", ["-j", "--job-path"])
 def test_config_from_argv_job_path(opt):
@@ -63,6 +69,19 @@ def test_config_from_argv_filename_replace(optargs, expected):
         config = Config.from_argv(argv)
         assert config.filename_replace == expected
 
+@pytest.mark.parametrize("opt", ["-o", "--output-dir"])
+def test_config_from_argv_output_dir(opt):
+    "The default path to the output clips directory can be changed."
+    path = Path("/dev/null")
+    config = Config.from_argv(["", opt, str(path)])
+    assert config.output_dir == path
+
+@pytest.mark.parametrize("path", [""])
+def test_config_from_argv_output_dir_invalid(path):
+    "Invalid paths are rejected."
+    with pytest.raises(Error):
+        Config.from_argv(["", "--output-dir", path])
+
 @pytest.mark.parametrize("optarg", [
     # Left side cannot be empty
     "=",
@@ -92,6 +111,19 @@ def test_config_from_argv_subcommand_invalid(subcommand_str):
     with pytest.raises(Error):
         Config.from_argv(["", subcommand_str])
 
+@pytest.mark.parametrize("opt", ["-i", "--video-dir"])
+def test_config_from_argv_video_dir(opt):
+    "The default path to the input video directory can be changed."
+    path = Path("/dev/null")
+    config = Config.from_argv(["", opt, str(path)])
+    assert config.video_dir == path
+
+@pytest.mark.parametrize("path", [""])
+def test_config_from_argv_video_dir_invalid(path):
+    "Invalid paths are rejected."
+    with pytest.raises(Error):
+        Config.from_argv(["", "--video-dir", path])
+
 @pytest.mark.parametrize("data,expected", [
     # Default preferences from an empty dict
     ({}, Prefs()),
@@ -100,10 +132,14 @@ def test_config_from_argv_subcommand_invalid(subcommand_str):
         {
             "filename-replace": {" ": "_"},
             "job-path": "/dev/null",
+            "output-dir": "/dev/null",
+            "video-dir": "/dev/null",
         },
         Prefs(
             job_path=Path("/dev/null"),
             filename_replace=Replace({" ": "_"}),
+            output_dir=Path("/dev/null"),
+            video_dir=Path("/dev/null"),
         ),
     ),
 ])

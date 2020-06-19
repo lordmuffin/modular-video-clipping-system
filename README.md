@@ -84,6 +84,12 @@ values:
     # Default path to the clip.yaml (absolute or relative paths are fine)
     job-path: "clip.yaml"
 
+    # Default path to the directory where clips should be written to.
+    output-dir: "."
+
+    # Default path to the directory where the source videos can be found.
+    video-dir: "."
+
 ## TODO
 ### Short Term
 [X] Create Repo and start collab.

@@ -5,7 +5,7 @@ import datetime
 
 import pytest # type: ignore
 
-from mvcs.config import Replace
+from mvcs.config import Config, Replace
 from mvcs.error import Error
 from mvcs.job import Clip, Job, Video
 
@@ -255,7 +255,7 @@ def test_video_from_dict_invalid(data):
 ])
 def test_job_from_dict(data, expected):
     "Jobs are deserialized from dicts correctly."
-    job = Job.from_dict(data)
+    job = Job.from_dict(Config.default(), data)
     assert job == expected
 
 @pytest.mark.parametrize("data", [
@@ -268,4 +268,4 @@ def test_job_from_dict(data, expected):
 def test_job_from_dict_invalid(data):
     "Deserializing an invalid job dict results in an error."
     with pytest.raises(Error):
-        Job.from_dict(data)
+        Job.from_dict(Config.default(), data)

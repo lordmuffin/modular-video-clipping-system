@@ -32,8 +32,12 @@ def handle_help(config: mvcs.Config):
             "OPTIONS:",
             "    -h, --help",
             "        Print usage information",
+            "    -i, --video-dir <PATH>",
+            f"        Path to the input video directory (default: {config.video_dir})",
             "    -j, --job-path <PATH>",
             f"        Path to the clipping job YAML file (default: {config.job_path})",
+            "    -o, --output-dir <PATH>",
+            f"        Path to the output clips directory (default: {config.output_dir})",
             "    -r, --filename-replace <OLD>=<NEW>",
             "        Add a mapping to replace strings in input/output filenames,",
             "        e.g. `--filename-replace ' =_'` to replace spaces with underscores;",
@@ -49,7 +53,7 @@ def handle_help(config: mvcs.Config):
 def handle_run(config: mvcs.Config):
     "Handle the run subcommand."
     # Deserialize the YAML job playbook and run it
-    job = mvcs.Job.from_yaml_file(config.job_path)
+    job = mvcs.Job.from_yaml_file(config)
     job.run(config)
 
 def main(argv: Optional[List[str]] = None) -> int:

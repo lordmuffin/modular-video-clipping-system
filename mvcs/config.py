@@ -35,6 +35,10 @@ class Prefs(NamedTuple):
     filename_replace: Replace = Replace()
     # Default path to the job file.
     job_path: Path = Path("clip.yaml")
+    # Default path to the output clips directory.
+    output_dir: Path = Path(".")
+    # Default path to the input video directory.
+    video_dir: Path = Path(".")
 
     @classmethod
     def dict_key(cls: Type[PrefsType], field: str) -> str:
@@ -43,6 +47,8 @@ class Prefs(NamedTuple):
             return {
                 "filename_replace": "filename-replace",
                 "job_path": "job-path",
+                "output_dir": "output-dir",
+                "video_dir": "video-dir",
             }[field]
         except KeyError:
             raise Error(f"invalid field: {field}")
@@ -56,6 +62,8 @@ class Prefs(NamedTuple):
         for (field, value_fn) in (
                 ("job_path", lambda x: Path(str(x))),
                 ("filename_replace", lambda x: Replace.from_dict(x)),
+                ("output_dir", lambda x: Path(str(x))),
+                ("video_dir", lambda x: Path(str(x))),
         ):
             key = cls.dict_key(field)
             if key in data:
@@ -98,8 +106,24 @@ class Config(NamedTuple):
     job_path: Path
     # String replacement map for input and output filenames.
     filename_replace: Replace
+    # Default path to the output clips directory.
+    output_dir: Path
+    # Default path to the input video directory.
+    video_dir: Path
     # mvcs subcommand.
     subcommand: Subcommand = Subcommand.HELP
+
+    @classmethod
+    def default(cls: Type[ConfigType], *, prefs: Optional[Prefs] = None) -> ConfigType:
+        "Return a default config."
+
+        prefs = prefs if prefs is not None else Prefs()
+        return cls(
+            job_path=prefs.job_path,
+            filename_replace=prefs.filename_replace,
+            output_dir=prefs.output_dir,
+            video_dir=prefs.video_dir,
+        )
 
     @classmethod
     # pylint: disable=too-many-branches
@@ -117,13 +141,17 @@ class Config(NamedTuple):
         config: Dict[str, Any] = {
             "job_path": prefs.job_path,
             "filename_replace": Replace(prefs.filename_replace),
+            "output_dir": prefs.output_dir,
+            "video_dir": prefs.video_dir,
         }
 
         try:
-            opts, args = getopt.getopt(argv[1:], "hj:r:", longopts=[
+            opts, args = getopt.getopt(argv[1:], "hi:j:o:r:", longopts=[
                 "filename-replace=",
                 "help",
                 "job-path=",
+                "output-dir=",
+                "video-dir=",
             ])
         except getopt.GetoptError as ex:
             raise Error(ex)
@@ -141,11 +169,21 @@ class Config(NamedTuple):
         for opt, optarg in opts:
             if opt in ("-h", "--help"):
                 config["subcommand"] = Subcommand.HELP
+            elif opt in ("-i", "--video-dir"):
+                if optarg:
+                    config["video_dir"] = Path(optarg)
+                else:
+                    raise Error("video directory path cannot be empty")
             elif opt in ("-j", "--job-path"):
                 if optarg:
                     config["job_path"] = Path(optarg)
                 else:
                     raise Error("job path cannot be empty")
+            elif opt in ("-o", "--output-dir"):
+                if optarg:
+                    config["output_dir"] = Path(optarg)
+                else:
+                    raise Error("output clip directory cannot be empty")
             elif opt in ("-r", "--filename-replace"):
                 if optarg:
                     if optarg.startswith("=="):

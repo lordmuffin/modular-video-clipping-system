@@ -164,7 +164,7 @@ class Job(NamedTuple):
     videos: List[Video] = []
 
     @classmethod
-    def from_dict(cls: Type[JobType], data: Dict[str, Any]) -> JobType:
+    def from_dict(cls: Type[JobType], config: Config, data: Dict[str, Any]) -> JobType:
         "Create a `Job` from an untyped `dict` (YAML deserialization result)."
 
         videos = data.get("videos", [])
@@ -175,18 +175,21 @@ class Job(NamedTuple):
             if not isinstance(video, dict):
                 raise Error(f"invalid video entry: {video}")
 
+        output_dir = Path(str(data.get("output-dir", config.output_dir)))
+        video_dir = Path(str(data.get("video-dir", config.video_dir)))
+
         return cls(
-            output_dir=Path(str(data.get("output-dir", "."))),
-            video_dir=Path(str(data.get("video-dir", "."))),
+            output_dir=output_dir,
+            video_dir=video_dir,
             videos=[Video.from_dict(video) for video in videos],
         )
 
     @classmethod
-    def from_yaml_file(cls: Type[JobType], path: Path) -> JobType:
+    def from_yaml_file(cls: Type[JobType], config: Config) -> JobType:
         "Create a `Job` from a YAML file."
 
-        with path.open(encoding="utf-8") as file:
-            return cls.from_dict(yaml.safe_load(file))
+        with config.job_path.open(encoding="utf-8") as file:
+            return cls.from_dict(config, yaml.safe_load(file))
 
     def run(self, config: Config):
         "Run the batch job and create all requested clips."
