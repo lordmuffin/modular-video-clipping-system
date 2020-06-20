@@ -39,6 +39,10 @@ class Prefs(NamedTuple):
     output_dir: Path = Path(".")
     # Default path to the input video directory.
     video_dir: Path = Path(".")
+    # Default input video file extension.
+    video_ext: str = "mkv"
+    # Default input video filename format.
+    video_filename_format: str = "%Y-%m-%d %H-%M-%S"
 
     @classmethod
     def dict_key(cls: Type[PrefsType], field: str) -> str:
@@ -49,6 +53,8 @@ class Prefs(NamedTuple):
                 "job_path": "job-path",
                 "output_dir": "output-dir",
                 "video_dir": "video-dir",
+                "video_ext": "video-ext",
+                "video_filename_format": "video-filename-format",
             }[field]
         except KeyError:
             raise Error(f"invalid field: {field}")
@@ -64,6 +70,8 @@ class Prefs(NamedTuple):
                 ("filename_replace", lambda x: Replace.from_dict(x)),
                 ("output_dir", lambda x: Path(str(x))),
                 ("video_dir", lambda x: Path(str(x))),
+                ("video_ext", lambda x: str(x)),
+                ("video_filename_format", lambda x: str(x)),
         ):
             key = cls.dict_key(field)
             if key in data:
@@ -110,6 +118,10 @@ class Config(NamedTuple):
     output_dir: Path
     # Default path to the input video directory.
     video_dir: Path
+    # Input video file extension.
+    video_ext: str
+    # Input video filename format.
+    video_filename_format: str
     # mvcs subcommand.
     subcommand: Subcommand = Subcommand.HELP
 
@@ -123,10 +135,12 @@ class Config(NamedTuple):
             filename_replace=prefs.filename_replace,
             output_dir=prefs.output_dir,
             video_dir=prefs.video_dir,
+            video_ext=prefs.video_ext,
+            video_filename_format=prefs.video_filename_format,
         )
 
     @classmethod
-    # pylint: disable=too-many-branches
+    # pylint: disable=too-many-branches,too-many-statements
     def from_argv(
             cls: Type[ConfigType],
             argv: List[str],
@@ -143,6 +157,8 @@ class Config(NamedTuple):
             "filename_replace": Replace(prefs.filename_replace),
             "output_dir": prefs.output_dir,
             "video_dir": prefs.video_dir,
+            "video_ext": prefs.video_ext,
+            "video_filename_format": prefs.video_filename_format,
         }
 
         try:
@@ -152,6 +168,8 @@ class Config(NamedTuple):
                 "job-path=",
                 "output-dir=",
                 "video-dir=",
+                "video-ext=",
+                "video-filename-format=",
             ])
         except getopt.GetoptError as ex:
             raise Error(ex)
@@ -197,6 +215,16 @@ class Config(NamedTuple):
                         raise Error(f"invalid replacement: {optarg}")
                 else:
                     config["filename_replace"] = Replace(prefs.filename_replace)
+            elif opt == "--video-ext":
+                if optarg:
+                    config["video_ext"] = optarg
+                else:
+                    raise Error("video extension cannot be empty")
+            elif opt == "--video-filename-format":
+                if optarg:
+                    config["video_filename_format"] = optarg
+                else:
+                    raise Error("video filename format cannot be empty")
             else:
                 raise Error(f"unhandled option: {opt}")
 

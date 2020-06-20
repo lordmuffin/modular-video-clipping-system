@@ -90,6 +90,12 @@ values:
     # Default path to the directory where the source videos can be found.
     video-dir: "."
 
+    # Default input video file extension.
+    video-ext: "mkv"
+
+    # Default input video filename format.
+    video-filename-format: "%Y-%m-%d %H-%M-%S"
+
 ## TODO
 ### Short Term
 [X] Create Repo and start collab.

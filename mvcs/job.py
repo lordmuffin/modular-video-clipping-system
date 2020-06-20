@@ -135,11 +135,11 @@ class Video(NamedTuple):
     def write_clips(self, config: Config, src_dir: Path, dst_dir: Path):
         "Create all requested clips from the video."
 
-        src_name = self.date.strftime("%Y-%m-%d %H-%M-%S.mkv")
+        src_name = self.date.strftime(config.video_filename_format)
         for (old, new) in config.filename_replace.items():
             src_name = src_name.replace(old, new)
 
-        src = src_dir / src_name
+        src = (src_dir / src_name).with_suffix(f".{config.video_ext}")
         if not src.is_file():
             raise Error(f"missing video file: {src}")
 

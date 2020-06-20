@@ -17,12 +17,16 @@ from mvcs.error import Error
             job_path=Path("/dev/null"),
             output_dir=Path("/dev/null"),
             video_dir=Path("/dev/null"),
+            video_ext="rm",
+            video_filename_format="%s",
         ),
         Prefs(
             filename_replace=Replace({" ": "_"}),
             job_path=Path("/dev/null"),
             output_dir=Path("/dev/null"),
             video_dir=Path("/dev/null"),
+            video_ext="rm",
+            video_filename_format="%s",
         ),
     ),
 ])
@@ -34,6 +38,8 @@ def test_config_from_argv_defaults(prefs, expected):
     assert config.output_dir == expected.output_dir
     assert config.subcommand == Subcommand.HELP
     assert config.video_dir == expected.video_dir
+    assert config.video_ext == expected.video_ext
+    assert config.video_filename_format == expected.video_filename_format
 
 @pytest.mark.parametrize("opt", ["-j", "--job-path"])
 def test_config_from_argv_job_path(opt):
@@ -124,6 +130,32 @@ def test_config_from_argv_video_dir_invalid(path):
     with pytest.raises(Error):
         Config.from_argv(["", "--video-dir", path])
 
+@pytest.mark.parametrize("opt", ["--video-ext"])
+def test_config_from_argv_video_ext(opt):
+    "The default input video file extension can be changed."
+    ext = "rm"
+    config = Config.from_argv(["", opt, ext])
+    assert config.video_ext == ext
+
+@pytest.mark.parametrize("ext", [""])
+def test_config_from_argv_video_ext_invalid(ext):
+    "Invalid file extensions are rejected."
+    with pytest.raises(Error):
+        Config.from_argv(["", "--video-ext", ext])
+
+@pytest.mark.parametrize("opt", ["--video-filename-format"])
+def test_config_from_argv_video_filename_format(opt):
+    "The default input video filename format can be changed."
+    fmt = "%s"
+    config = Config.from_argv(["", opt, fmt])
+    assert config.video_filename_format == fmt
+
+@pytest.mark.parametrize("fmt", [""])
+def test_config_from_argv_video_filename_format_invalid(fmt):
+    "Invalid filename formats are rejected."
+    with pytest.raises(Error):
+        Config.from_argv(["", "--video-filename-format", fmt])
+
 @pytest.mark.parametrize("data,expected", [
     # Default preferences from an empty dict
     ({}, Prefs()),
@@ -134,12 +166,16 @@ def test_config_from_argv_video_dir_invalid(path):
             "job-path": "/dev/null",
             "output-dir": "/dev/null",
             "video-dir": "/dev/null",
+            "video-ext": "rm",
+            "video-filename-format": "%s",
         },
         Prefs(
             job_path=Path("/dev/null"),
             filename_replace=Replace({" ": "_"}),
             output_dir=Path("/dev/null"),
             video_dir=Path("/dev/null"),
+            video_ext="rm",
+            video_filename_format="%s",
         ),
     ),
 ])
