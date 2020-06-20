@@ -134,13 +134,24 @@ class Video(NamedTuple):
 
         return cls(**video) # type: ignore
 
+    @classmethod
+    def from_path(cls: Type[VideoType], config: Config, path: Path) -> VideoType:
+        "Create a default `Video` from a filesystem path."
+
+        if path.suffix != f".{config.video_ext}":
+            raise Error(f"{path} has invalid file extension")
+
+        fmt = config.filename_replace.apply(config.video_filename_format)
+        try:
+            date = datetime.datetime.strptime(path.stem, fmt)
+        except ValueError:
+            raise Error(f"{path} does not match format {fmt}")
+        return cls(date=date, title="video")
+
     def write_clips(self, config: Config, src_dir: Path, dst_dir: Path):
         "Create all requested clips from the video."
 
-        src_name = self.date.strftime(config.video_filename_format)
-        for (old, new) in config.filename_replace.items():
-            src_name = src_name.replace(old, new)
-
+        src_name = config.filename_replace.apply(self.date.strftime(config.video_filename_format))
         src = (src_dir / src_name).with_suffix(f".{config.video_ext}")
         if not src.is_file():
             raise Error(f"missing video file: {src}")

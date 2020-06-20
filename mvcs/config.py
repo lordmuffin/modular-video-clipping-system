@@ -27,6 +27,12 @@ class Replace(UserDict): # pylint: disable=too-many-ancestors
 
         return cls(data)
 
+    def apply(self, target: str) -> str:
+        "Apply replacements to a target string and return the result."
+        for (key, value) in self.items():
+            target = target.replace(key, value)
+        return target
+
 PrefsType = TypeVar("PrefsType", bound="Prefs")
 class Prefs(NamedTuple):
     "User preferences to choose default behavior."
