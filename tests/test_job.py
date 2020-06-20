@@ -82,10 +82,12 @@ def test_clip_from_dict_invalid(data):
     with pytest.raises(Error):
         Clip.from_dict(data)
 
-@pytest.mark.parametrize("clip,date,epoch,title,expected", [
+# pylint: disable=too-many-arguments
+@pytest.mark.parametrize("clip,config,date,epoch,title,expected", [
     # Clip start time is relative to video time with epoch 0
     (
         Clip.from_dict({"time": "1-2", "title": "title"}),
+        Config.default(),
         datetime.datetime(1970, 1, 1),
         datetime.timedelta(),
         "test",
@@ -94,6 +96,7 @@ def test_clip_from_dict_invalid(data):
     # Clip start time and video time are adjusted with positive epoch
     (
         Clip.from_dict({"time": "1-2", "title": "title"}),
+        Config.default(),
         datetime.datetime(1970, 1, 1),
         datetime.timedelta(seconds=1),
         "test",
@@ -102,6 +105,7 @@ def test_clip_from_dict_invalid(data):
     # Clip start time and video time are adjusted with negative epoch
     (
         Clip.from_dict({"time": "1-2", "title": "title"}),
+        Config.default(),
         datetime.datetime(1970, 1, 1),
         -1 * datetime.timedelta(seconds=1),
         "test",
@@ -110,6 +114,7 @@ def test_clip_from_dict_invalid(data):
     # Clip start time saturates at 0 when it is before the epoch
     (
         Clip.from_dict({"time": "1-2", "title": "title"}),
+        Config.default(),
         datetime.datetime(1970, 1, 1),
         datetime.timedelta(seconds=3),
         "test",
@@ -118,25 +123,29 @@ def test_clip_from_dict_invalid(data):
     # Problematic characters are munged (colon and slash) and lowercased
     (
         Clip.from_dict({"time": "0-1", "title": "THIS: is/bad"}),
+        Config.default(),
         datetime.datetime(1970, 1, 1),
         datetime.timedelta(),
         "NOT/GOOD/AT:ALL:::HERE",
         "1970-01-01 00-00-00 - t+0h00m00s - not-good-at-all---here - this- is-bad.mkv",
     ),
+    # The output filename respects the config
+    (
+        Clip.from_dict({"time": "1-2", "title": "title"}),
+        Config.default()._replace(
+            filename_replace=Replace.from_dict({" ": "_"}),
+            output_ext="mp4",
+        ),
+        datetime.datetime(1970, 1, 1),
+        datetime.timedelta(),
+        "test",
+        "1970-01-01_00-00-00_-_t+0h00m01s_-_test_-_title.mp4",
+    ),
 ])
-def test_clip_path_str(clip, date, epoch, title, expected):
+def test_clip_path_str(clip, config, date, epoch, title, expected):
     "Getting the filename for a clip works as expected."
-    path = clip.path_str(date, epoch, title)
+    path = clip.path_str(config, date, epoch, title)
     assert path == expected
-
-def test_clip_path_str_replace():
-    "Filename respects replacement mapping configuration."
-    clip = Clip.from_dict({"time": "0-1", "title": "title with spaces"})
-    date = datetime.datetime(1970, 1, 1)
-    epoch = datetime.timedelta()
-    title = "test"
-    path = clip.path_str(date, epoch, title, replace=Replace({" ": "_"}))
-    assert path == "1970-01-01_00-00-00_-_t+0h00m00s_-_test_-_title_with_spaces.mkv"
 
 @pytest.mark.parametrize("data,expected", [
     # Values are deserialized into expected types

@@ -37,6 +37,8 @@ class Prefs(NamedTuple):
     job_path: Path = Path("clip.yaml")
     # Default path to the output clips directory.
     output_dir: Path = Path(".")
+    # Default output clip file extension.
+    output_ext: str = "mkv"
     # Default path to the input video directory.
     video_dir: Path = Path(".")
     # Default input video file extension.
@@ -52,6 +54,7 @@ class Prefs(NamedTuple):
                 "filename_replace": "filename-replace",
                 "job_path": "job-path",
                 "output_dir": "output-dir",
+                "output_ext": "output-ext",
                 "video_dir": "video-dir",
                 "video_ext": "video-ext",
                 "video_filename_format": "video-filename-format",
@@ -69,6 +72,7 @@ class Prefs(NamedTuple):
                 ("job_path", lambda x: Path(str(x))),
                 ("filename_replace", lambda x: Replace.from_dict(x)),
                 ("output_dir", lambda x: Path(str(x))),
+                ("output_ext", lambda x: str(x)),
                 ("video_dir", lambda x: Path(str(x))),
                 ("video_ext", lambda x: str(x)),
                 ("video_filename_format", lambda x: str(x)),
@@ -116,6 +120,8 @@ class Config(NamedTuple):
     filename_replace: Replace
     # Default path to the output clips directory.
     output_dir: Path
+    # Output clip file extension.
+    output_ext: str
     # Default path to the input video directory.
     video_dir: Path
     # Input video file extension.
@@ -132,8 +138,9 @@ class Config(NamedTuple):
         prefs = prefs if prefs is not None else Prefs()
         return cls(
             job_path=prefs.job_path,
-            filename_replace=prefs.filename_replace,
+            filename_replace=prefs.filename_replace.copy(),
             output_dir=prefs.output_dir,
+            output_ext=prefs.output_ext,
             video_dir=prefs.video_dir,
             video_ext=prefs.video_ext,
             video_filename_format=prefs.video_filename_format,
@@ -149,24 +156,15 @@ class Config(NamedTuple):
     ) -> ConfigType:
         "Get configuration by parsing the program arguments."
 
-        # Use default preferences if not provided
         prefs = prefs if prefs is not None else Prefs()
-
-        config: Dict[str, Any] = {
-            "job_path": prefs.job_path,
-            "filename_replace": Replace(prefs.filename_replace),
-            "output_dir": prefs.output_dir,
-            "video_dir": prefs.video_dir,
-            "video_ext": prefs.video_ext,
-            "video_filename_format": prefs.video_filename_format,
-        }
-
+        config: Dict[str, Any] = cls.default(prefs=prefs)._asdict()
         try:
             opts, args = getopt.getopt(argv[1:], "hi:j:o:r:", longopts=[
                 "filename-replace=",
                 "help",
                 "job-path=",
                 "output-dir=",
+                "output-ext=",
                 "video-dir=",
                 "video-ext=",
                 "video-filename-format=",
@@ -214,7 +212,12 @@ class Config(NamedTuple):
                     else:
                         raise Error(f"invalid replacement: {optarg}")
                 else:
-                    config["filename_replace"] = Replace(prefs.filename_replace)
+                    config["filename_replace"] = prefs.filename_replace.copy()
+            elif opt == "--output-ext":
+                if optarg:
+                    config["output_ext"] = optarg
+                else:
+                    raise Error("output extension cannot be empty")
             elif opt == "--video-ext":
                 if optarg:
                     config["video_ext"] = optarg

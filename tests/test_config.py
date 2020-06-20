@@ -13,7 +13,7 @@ from mvcs.error import Error
     # The default config respects user preferences when provided
     (
         Prefs(
-            filename_replace=Replace({" ": "_"}),
+            filename_replace=Replace.from_dict({" ": "_"}),
             job_path=Path("/dev/null"),
             output_dir=Path("/dev/null"),
             video_dir=Path("/dev/null"),
@@ -21,7 +21,7 @@ from mvcs.error import Error
             video_filename_format="%s",
         ),
         Prefs(
-            filename_replace=Replace({" ": "_"}),
+            filename_replace=Replace.from_dict({" ": "_"}),
             job_path=Path("/dev/null"),
             output_dir=Path("/dev/null"),
             video_dir=Path("/dev/null"),
@@ -56,13 +56,13 @@ def test_config_from_argv_job_path_invalid(path):
 
 @pytest.mark.parametrize("optargs,expected", [
     # Simple key=value arguments work
-    ((" =_",), Replace({" ": "_"})),
+    ((" =_",), Replace.from_dict({" ": "_"})),
     (
         (" =...", "+=", "equals=="),
-        Replace({" ": "...", "+": "", "equals": "="}),
+        Replace.from_dict({" ": "...", "+": "", "equals": "="}),
     ),
     # "=" can be replaced with ==value
-    (("==equals",), Replace({"=": "equals"})),
+    (("==equals",), Replace.from_dict({"=": "equals"})),
     # An empty argument clears the replacement map
     ((" =_", "+=", ""), Replace()),
 ])
@@ -87,6 +87,19 @@ def test_config_from_argv_output_dir_invalid(path):
     "Invalid paths are rejected."
     with pytest.raises(Error):
         Config.from_argv(["", "--output-dir", path])
+
+@pytest.mark.parametrize("opt", ["--output-ext"])
+def test_config_from_argv_output_ext(opt):
+    "The default output clip file extension can be changed."
+    ext = "rm"
+    config = Config.from_argv(["", opt, ext])
+    assert config.output_ext == ext
+
+@pytest.mark.parametrize("ext", [""])
+def test_config_from_argv_output_ext_invalid(ext):
+    "Invalid file extensions are rejected."
+    with pytest.raises(Error):
+        Config.from_argv(["", "--output-ext", ext])
 
 @pytest.mark.parametrize("optarg", [
     # Left side cannot be empty
@@ -165,14 +178,16 @@ def test_config_from_argv_video_filename_format_invalid(fmt):
             "filename-replace": {" ": "_"},
             "job-path": "/dev/null",
             "output-dir": "/dev/null",
+            "output-ext": "rm",
             "video-dir": "/dev/null",
             "video-ext": "rm",
             "video-filename-format": "%s",
         },
         Prefs(
             job_path=Path("/dev/null"),
-            filename_replace=Replace({" ": "_"}),
+            filename_replace=Replace.from_dict({" ": "_"}),
             output_dir=Path("/dev/null"),
+            output_ext="rm",
             video_dir=Path("/dev/null"),
             video_ext="rm",
             video_filename_format="%s",

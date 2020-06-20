@@ -43,6 +43,8 @@ def handle_help(_config: mvcs.Config):
             "        Add a mapping to replace strings in input/output filenames,",
             "        e.g. `--filename-replace ' =_'` to replace spaces with underscores;",
             "        pass an empty string to clear the current mappings",
+            "    --output-ext <EXTENSION>",
+            f"        Output clip file extension (default: {prefs.output_ext})",
             "    --video-ext <EXTENSION>",
             f"        Input video file extension (default: {prefs.video_ext})",
             "    --video-filename-format <STRING>",

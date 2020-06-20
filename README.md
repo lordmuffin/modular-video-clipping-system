@@ -87,6 +87,9 @@ values:
     # Default path to the directory where clips should be written to.
     output-dir: "."
 
+    # Default output clip file extension.
+    output-ext: "mkv"
+
     # Default path to the directory where the source videos can be found.
     video-dir: "."
 

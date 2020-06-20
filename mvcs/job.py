@@ -4,11 +4,11 @@ import datetime
 import subprocess
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Type, TypeVar
+from typing import Any, Dict, List, NamedTuple, Type, TypeVar
 
 import yaml
 
-from mvcs.config import Config, Replace
+from mvcs.config import Config
 from mvcs.error import Error
 from mvcs.time import datetime_from_str, timedelta_from_str, timedelta_to_path_str
 
@@ -46,26 +46,24 @@ class Clip(NamedTuple):
 
     def path_str(
             self,
+            config: Config,
             date: datetime.datetime,
             epoch: datetime.timedelta,
             title: str,
-            *,
-            replace: Optional[Replace] = None,
     ) -> str:
         "Get the file name for a clip."
 
-        replace = Replace() if replace is None else replace
         path_str = " - ".join((
             (date + epoch).strftime("%Y-%m-%d %H:%M:%S"),
             f"T+{timedelta_to_path_str(self.start - epoch)}",
             title,
-            f"{self.title}.mkv",
+            f"{self.title}",
         )).casefold()
 
-        for (old, new) in chain((("/", "-"), (":", "-")), replace.items()):
+        for (old, new) in chain((("/", "-"), (":", "-")), config.filename_replace.items()):
             path_str = path_str.replace(old, new)
 
-        return path_str
+        return ".".join((path_str, config.output_ext))
 
     def write(self, src: Path, dst: Path):
         "Use ffmpeg to write the lossless video clip file."
@@ -145,10 +143,10 @@ class Video(NamedTuple):
 
         for clip in self.clips:
             dst = dst_dir / clip.path_str(
+                config,
                 self.date,
                 self.epoch,
                 self.title,
-                replace=config.filename_replace,
             )
             clip.write(src, dst)
 
