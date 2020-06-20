@@ -236,6 +236,39 @@ def test_video_from_dict_invalid(data):
     with pytest.raises(Error):
         Video.from_dict(data)
 
+@pytest.mark.parametrize("config,path,expected", [
+    # Default config works as expected
+    (
+        Config.default(),
+        Path("/foo/bar/1970-01-01 00-00-00.mkv"),
+        Video.from_dict({"date": "1970-01-01T00:00:00", "title": "video"}),
+    ),
+    # Filename replacement and formatting config is respected
+    (
+        Config.default()._replace(
+            filename_replace=Replace.from_dict({" ": "_"}),
+            video_filename_format="%Y %m %d %H %M %S",
+        ),
+        Path("/foo/bar/1970_01_01_02_03_04.mkv"),
+        Video.from_dict({"date": "1970-01-01T02:03:04", "title": "video"}),
+    ),
+])
+def test_video_from_path(config, path, expected):
+    "Default videos are created from filesystem paths correctly."
+    video = Video.from_path(config, path)
+    assert video == expected
+
+@pytest.mark.parametrize("config,path", [
+    # Files that don't match the video filename format are rejected
+    (Config.default(), Path("/foo/bar/baz.mkv")),
+    # Files with the wrong extension are rejected
+    (Config.default(), Path("/foo/bar/1970-01-01 00-00-00.mp4")),
+])
+def test_video_from_path_invalid(config, path):
+    "Invalid paths raise an error."
+    with pytest.raises(Error):
+        Video.from_path(config, path)
+
 @pytest.mark.parametrize("data,expected", [
     # Values are deserialized into expected types
     (
