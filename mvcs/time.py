@@ -7,7 +7,7 @@ from mvcs.error import Error
 def datetime_from_str(dt_s: str) -> datetime.datetime:
     "Parse a `str` as a `datetime.datetime` object."
 
-    for sep in ("T", " "):
+    for sep in ("T", " ", "_"):
         try:
             return datetime.datetime.strptime(dt_s, f"%Y-%m-%d{sep}%H:%M:%S")
         except ValueError:

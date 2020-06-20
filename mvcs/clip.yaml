@@ -1,0 +1,7 @@
+output-dir: c:/OBS Clips
+video-dir: c:/OBS Captures
+videos:
+- clips: []
+  date: 2020-06-15_10-42-46
+  epoch: 0
+  title: Video

@@ -49,6 +49,8 @@ from os.path import isfile, join
 from os import listdir
 import yaml
 from datetime import datetime
+from mvcs.time import datetime_from_str, timedelta_from_str, timedelta_to_path_str
+
 
 def generate_template(document):
     # Example YAML
@@ -87,12 +89,11 @@ def current_time(format):
         return datetime.now().strftime("%Y-%m-%d %H-%M-%S")
 
 def latest_video(date_time, extension, path):
-    video_path = str(date_time) + "." + extension
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
-    onlymp4 = [item for item in onlyfiles if extension in item]
-    print(onlymp4)
+    extension = [item for item in onlyfiles if extension in item]
+    print(extension)
 
-    youngest = max(dt for dt in onlymp4 if dt < date_time)
+    youngest = max(dt for dt in extension if dt < date_time)
     print(os.path.splitext(youngest)[0])
     return os.path.splitext(youngest)[0]
 
@@ -100,28 +101,41 @@ def add_video(document, date_time, epoch, title):
     with open(document, "r") as f:
         contents = yaml.safe_load(f)
 
-    print("Before: ", contents)
-    print(date_time)
-    data = {
-        'date': date_time,
-        'epoch': epoch,
-        'title': title,
-        'clips': []
-    }
+    # Check for existing video.
 
-    contents['videos'].append(data)
-    print("After: ", contents)
+    if contents['videos']:
+        for video in contents['videos']:
+            if video['date'] == date_time:
+                print("Found Existing Video.")
 
-    with open(document, "w") as f:
-        yaml.safe_dump(contents, f)
+                return "Found Existing Video."
+    
+    else:
+        # Add Video
+        print("Before: ", contents)
+        print(date_time)
+        data = {
+            'date': date_time,
+            'epoch': epoch,
+            'title': title,
+            'clips': []
+        }
 
-def add_clip(document, latest_video, current_time, title):
+        contents['videos'].append(data)
+        print("After: ", contents)
+
+        with open(document, "w") as f:
+            yaml.safe_dump(contents, f)
+
+        return date_time
+
+def add_clip(document, latest_video, window, title):
     with open(document, "r") as f:
         contents = yaml.safe_load(f)
 
     data = {
-            'time': current_time,
-            'title': title
+        'time': window,
+        'title': title
     }
 
     for item in contents['videos']:
@@ -129,6 +143,27 @@ def add_clip(document, latest_video, current_time, title):
             print("Before: ", str(item))
             item['clips'].append(data)
             print("After: ", str(item))
-
+        
     with open(document, "w") as f:
         yaml.safe_dump(contents, f)
+
+def trigger_clip(config: Config, current_time, video_time, clip_before_length, clip_after_length, document, latest_video, title):
+    src_name = datetime.strftime(config.video_filename_format)
+    for (old, new) in config.filename_replace.items():
+        src_name = src_name.replace(old, new)
+    print(src_name)
+
+    relative_time = datetime_from_str(video_time) - current_time
+    start_window = relative_time - clip_before_length
+    end_window = relative_time + clip_after_length
+
+
+    
+    # Fix if less than 0
+    if start_window <= 0:
+        start_window = 0
+
+    window = str(start_window) + " - " + str(end_window)
+    print(window)
+
+    add_clip(document, latest_video, window, title)
