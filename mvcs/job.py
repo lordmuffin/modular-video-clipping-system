@@ -68,6 +68,10 @@ class Clip(NamedTuple):
     def write(self, src: Path, dst: Path):
         "Use ffmpeg to write the lossless video clip file."
 
+        if dst.exists():
+            print(f"skipping existing clip: {dst}")
+            return
+
         cmd = (
             "ffmpeg",
             "-ss", str(self.start.total_seconds()),
