@@ -3,6 +3,7 @@
 "Create clips from OBS captures using ffmpeg and YAML."
 
 import sys
+from pathlib import Path
 from typing import List, Optional
 
 import mvcs
@@ -22,6 +23,7 @@ def handle_clip(_config: mvcs.Config):
 def handle_help(_config: mvcs.Config):
     "Handle the help subcommand."
 
+    prefs = mvcs.Prefs()
     for line in (
             "mvcs - multi-video clipping system",
             "",
@@ -31,8 +33,22 @@ def handle_help(_config: mvcs.Config):
             "OPTIONS:",
             "    -h, --help",
             "        Print usage information",
+            "    -i, --video-dir <PATH>",
+            f"        Path to the input video directory (default: {prefs.video_dir})",
             "    -j, --job-path <PATH>",
-            "        Path to the clipping job YAML file (default: clip.yaml)",
+            f"        Path to the clipping job YAML file (default: {prefs.job_path})",
+            "    -o, --output-dir <PATH>",
+            f"        Path to the output clips directory (default: {prefs.output_dir})",
+            "    -r, --filename-replace <OLD>=<NEW>",
+            "        Add a mapping to replace strings in input/output filenames,",
+            "        e.g. `--filename-replace ' =_'` to replace spaces with underscores;",
+            "        pass an empty string to clear the current mappings",
+            "    --output-ext <EXTENSION>",
+            f"        Output clip file extension (default: {prefs.output_ext})",
+            "    --video-ext <EXTENSION>",
+            f"        Input video file extension (default: {prefs.video_ext})",
+            "    --video-filename-format <STRING>",
+            f"        Input video filename format (default: {prefs.video_filename_format})",
             "",
             "SUBCOMMANDS:",
             "    clip    Add a new clip to the job file",
@@ -44,16 +60,20 @@ def handle_help(_config: mvcs.Config):
 def handle_run(config: mvcs.Config):
     "Handle the run subcommand."
     # Deserialize the YAML job playbook and run it
-    job = mvcs.Job.from_yaml_file(config.job_path)
-    job.run()
+    job = mvcs.Job.from_yaml_file(config)
+    job.run(config)
 
 def main(argv: Optional[List[str]] = None) -> int:
     "Main entrypoint."
 
     argv = argv if argv is not None else sys.argv
     try:
+        # Get user preferences
+        prefs_path = Path("~/.config/mvcs/prefs.yaml").expanduser()
+        prefs = mvcs.Prefs.from_yaml_file(prefs_path) if prefs_path.is_file() else None
+
         # Get configuration from command-line arguments
-        config = mvcs.Config.from_argv(argv)
+        config = mvcs.Config.from_argv(argv, prefs=prefs)
 
         # Dispatch subcommand handler
         {

@@ -71,13 +71,41 @@ Note the timestamp used in the output filename reflects the epoch-adjusted
 virtual start time of the video, and the relative timestamp of each clip also
 accounts for the epoch (but will never be negative).
 
+## User preferences (defaults)
+
+You can create `~/.config/mvcs/prefs.yaml` to configure the default behavior of
+the program. Command-line options take precedence over values defined in the
+preferences file. Here is a commented example `prefs.yaml` with all defaults
+values:
+
+    # String replacement map for input and output filenames
+    filename-replace: {}
+
+    # Default path to the clip.yaml (absolute or relative paths are fine)
+    job-path: "clip.yaml"
+
+    # Default path to the directory where clips should be written to.
+    output-dir: "."
+
+    # Default output clip file extension.
+    output-ext: "mkv"
+
+    # Default path to the directory where the source videos can be found.
+    video-dir: "."
+
+    # Default input video file extension.
+    video-ext: "mkv"
+
+    # Default input video filename format.
+    video-filename-format: "%Y-%m-%d %H-%M-%S"
+
 ## TODO
 ### Short Term
 [X] Create Repo and start collab.
 
-[ ] user preferences via a yaml config (e.g. ~/.config/mvcs/config.yaml)
+[X] user preferences via a yaml config (e.g. ~/.config/mvcs/config.yaml)
 
-[ ] smart detection of existing clips, if you happen to run a playbook twice, it shouldn't overwrite (or prompt you to overwrite) your existing clip, it should skip it
+[x] smart detection of existing clips, if you happen to run a playbook twice, it shouldn't overwrite (or prompt you to overwrite) your existing clip, it should skip it
 
 [ ] Add "controller" to handle generating YAML for clipping in real time.
 
