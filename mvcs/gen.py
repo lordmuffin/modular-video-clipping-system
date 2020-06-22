@@ -49,8 +49,12 @@ from os.path import isfile, join
 from os import listdir
 import yaml
 from datetime import datetime
-from mvcs.time import datetime_from_str, timedelta_from_str, timedelta_to_path_str
-
+from datetime import timedelta
+import pathlib
+from mvcs.config import Config
+from mvcs.time import datetime_from_str, datetime_from_obs_name, timedelta_from_str, timedelta_to_path_str
+from mvcs.job import Video
+from mvcs.error import Error
 
 def generate_template(document):
     # Example YAML
@@ -81,21 +85,45 @@ def check_template(document):
 #     path_str = f"{date_str} - T+{start_str} - {title} - {self.title}.mkv"
 #     return re.sub(r"[/\:]", "-", path_str.casefold())
 
-def current_time(format):
+def current_time():
+    return datetime.now()
 
-    if format == "%CCYY-%MM-%DD_%hh-%mm-%ss":
-        return datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    elif format == "%CCYY-%MM-%DD %hh-%mm-%ss":
-        return datetime.now().strftime("%Y-%m-%d %H-%M-%S")
-
-def latest_video(date_time, extension, path):
+def latest_video(config: Config, date_time, extension, path):
     onlyfiles = [f for f in listdir(path) if isfile(join(path, f))]
     extension = [item for item in onlyfiles if extension in item]
-    print(extension)
 
-    youngest = max(dt for dt in extension if dt < date_time)
-    print(os.path.splitext(youngest)[0])
-    return os.path.splitext(youngest)[0]
+    video_list = []
+
+    for item in extension:
+        video = Video.from_path(config, pathlib.Path(item))._replace(title=item)
+
+        video_list.append(video)
+
+    latest = max(video for video in video_list if video.date < date_time)
+
+    # file_object = {'files': []}
+    # date_list = []
+
+    # for item in extension:
+    #     item = os.path.splitext(item)[0]
+    #     item_datetime = datetime_from_obs_name(item)
+    #     item_json = {
+    #         'filename': item,
+    #         'datetime': item_datetime
+    #     }
+    #     file_object['files']
+    #     # file_object['filename'][item][0] = item_datetime
+    #     # print(item)
+    #     if item_datetime <= date_time:
+    #         date_list.append(item)
+    # print(file_object)
+    # latest = max(date_list)
+    # print(latest)
+
+    # print(max(file_list))
+    # youngest = max(dt for dt in extension if dt < str(date_time))
+    # print(youngest)
+    return latest
 
 def add_video(document, date_time, epoch, title):
     with open(document, "r") as f:
@@ -139,7 +167,7 @@ def add_clip(document, latest_video, window, title):
     }
 
     for item in contents['videos']:
-        if item['date'] == latest_video:
+        if item['date'] == latest_video.date:
             print("Before: ", str(item))
             item['clips'].append(data)
             print("After: ", str(item))
@@ -147,23 +175,30 @@ def add_clip(document, latest_video, window, title):
     with open(document, "w") as f:
         yaml.safe_dump(contents, f)
 
-def trigger_clip(config: Config, current_time, video_time, clip_before_length, clip_after_length, document, latest_video, title):
-    src_name = datetime.strftime(config.video_filename_format)
-    for (old, new) in config.filename_replace.items():
-        src_name = src_name.replace(old, new)
-    print(src_name)
+def trigger_clip(config: Config, video_time, clip_before_length, clip_after_length, document, latest_video, title):
+    time = current_time()
+    relative_time = time - latest_video.date
 
-    relative_time = datetime_from_str(video_time) - current_time
+    clip_before_length = timedelta(seconds=clip_before_length)
+    clip_after_length = timedelta(seconds=clip_after_length)
+
+    print("Current Time: {}".format(time))
+    print("Latest Video Time: {}".format(latest_video.date))
+    print("Relative Time: {}".format(relative_time))
+
     start_window = relative_time - clip_before_length
+    start_window = start_window.strftime("%H:%M:%S")
+
     end_window = relative_time + clip_after_length
 
+    print("Start Window: {}".format(start_window))
+    print("End Window: {}".format(end_window))
 
-    
-    # Fix if less than 0
-    if start_window <= 0:
-        start_window = 0
+    # # Fix if less than 0
+    # if start_window <= time.isoformat:
+    #     start_window = time
 
     window = str(start_window) + " - " + str(end_window)
-    print(window)
+    print("Window: {}".format(window))
 
-    add_clip(document, latest_video, window, title)
+    # add_clip(document, latest_video, window, title)

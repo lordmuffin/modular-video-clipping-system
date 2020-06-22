@@ -16,7 +16,8 @@ def handle_clip(_config: mvcs.Config):
     mvcs.gen.check_template(yaml)
     print(_config.video_dir)
     print(_config.video_ext)
-    latest = mvcs.gen.latest_video(mvcs.gen.current_time("%CCYY-%MM-%DD_%hh-%mm-%ss"), _config.video_ext, _config.video_dir)
+    # print(mvcs.gen.current_time())
+    latest = mvcs.gen.latest_video(_config, mvcs.gen.current_time(), _config.video_ext, _config.video_dir)
     video = mvcs.gen.add_video(
         yaml,
         latest,
@@ -30,7 +31,7 @@ def handle_clip(_config: mvcs.Config):
     #     "CLIP IT!",
     # )
     mvcs.gen.trigger_clip(
-      mvcs.gen.current_time("%CCYY-%MM-%DD_%hh-%mm-%ss"),
+      _config,
       latest,
       10,
       10,
