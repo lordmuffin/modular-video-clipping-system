@@ -5,7 +5,12 @@ import datetime
 import pytest # type: ignore
 
 from mvcs.error import Error
-from mvcs.time import datetime_from_str, timedelta_from_str, timedelta_to_path_str
+from mvcs.time import \
+        datetime_from_str, \
+        datetime_to_str, \
+        timedelta_from_str, \
+        timedelta_to_path_str, \
+        timedelta_to_str
 
 @pytest.mark.parametrize("dt_str,expected", [
     # Either "T" or space should work as the date/time separator
@@ -50,6 +55,16 @@ def test_datetime_from_str_invalid(dt_str):
     "Parsing an invalid datetime string raise an error."
     with pytest.raises(Error):
         datetime_from_str(dt_str)
+
+@pytest.mark.parametrize("dtime,expected", [
+    (datetime.datetime(1970, 1, 1), "1970-01-01T00:00:00"),
+    (datetime.datetime(1, 1, 1), "0001-01-01T00:00:00"),
+    (datetime.datetime(1999, 12, 31, hour=23, minute=59, second=59), "1999-12-31T23:59:59"),
+])
+def test_datetime_to_str(dtime, expected):
+    "datetimes are serialized to strings as expected."
+    dt_s = datetime_to_str(dtime)
+    assert dt_s == expected
 
 @pytest.mark.parametrize("td_str,expected", [
     ("00:00:00", datetime.timedelta()),
@@ -119,3 +134,22 @@ def test_timedelta_to_path_str(delta_t, expected):
     "Filename segments from timedelta objects are constructed as expected."
     path = timedelta_to_path_str(delta_t)
     assert path == expected
+
+@pytest.mark.parametrize("delta_t,expected", [
+    (datetime.timedelta(), "0"),
+    (datetime.timedelta(seconds=1), "1"),
+    (datetime.timedelta(seconds=59), "59"),
+    (datetime.timedelta(minutes=1), "1:00"),
+    (datetime.timedelta(hours=1), "1:00:00"),
+    (datetime.timedelta(hours=99, minutes=59, seconds=59), "99:59:59"),
+    # Unconventional/overflowing values are displayed correctly
+    (datetime.timedelta(minutes=2, seconds=123), "4:03"),
+    # Negative values are serialized correctly
+    (-1 * datetime.timedelta(seconds=12), "-12"),
+    (-1 * datetime.timedelta(minutes=3, seconds=4), "-3:04"),
+    (-1 * datetime.timedelta(days=1, minutes=2, seconds=3), "-24:02:03"),
+])
+def test_timedelta_to_str(delta_t, expected):
+    "deltatimes are serialized to strings as expected."
+    td_s = timedelta_to_str(delta_t)
+    assert td_s == expected
