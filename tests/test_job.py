@@ -243,13 +243,14 @@ def test_video_from_dict_invalid(data):
         Path("/foo/bar/1970-01-01 00-00-00.mkv"),
         Video.from_dict({"date": "1970-01-01T00:00:00", "title": "video"}),
     ),
-    # Filename replacement and formatting config is respected
+    # Filename handling config is respected
     (
         Config.default()._replace(
             filename_replace=Replace.from_dict({" ": "_"}),
             video_filename_format="%Y %m %d %H %M %S",
+            video_ext="mp4",
         ),
-        Path("/foo/bar/1970_01_01_02_03_04.mkv"),
+        Path("/foo/bar/1970_01_01_02_03_04.mp4"),
         Video.from_dict({"date": "1970-01-01T02:03:04", "title": "video"}),
     ),
 ])
