@@ -8,16 +8,30 @@ from typing import List, Optional
 
 import mvcs
 
-def handle_clip(_config: mvcs.Config):
+def handle_clip(config: mvcs.Config):
     "Handle the clip subcommand."
 
-    mvcs.gen.check_template("test.yaml")
-    latest = mvcs.gen.latest_video(mvcs.gen.current_time("%CCYY-%MM-%DD_%hh-%mm-%ss"), ".mp4", "./")
-    mvcs.gen.add_clip(
-        "test.yaml",
+    yaml = config.job_path
+
+    mvcs.gen.check_template(yaml)
+    print(config.video_dir)
+    print(config.video_ext)
+    # print(mvcs.gen.current_time())
+    latest = mvcs.gen.latest_video(config, mvcs.gen.current_time(), config.video_ext, config.video_dir)
+    video = mvcs.gen.add_video(
+        yaml,
         latest,
-        mvcs.gen.current_time("%CCYY-%MM-%DD_%hh-%mm-%ss"),
-        "CLIP IT!",
+        0,
+        "Video"
+    )
+    mvcs.gen.trigger_clip(
+      config,
+      latest,
+      300,
+      30,
+      yaml,
+      latest,
+      "CLIP IT!",
     )
 
 def handle_help(_config: mvcs.Config):
