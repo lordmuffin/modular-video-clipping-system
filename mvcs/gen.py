@@ -56,11 +56,11 @@ from mvcs.time import datetime_from_str, datetime_to_str, timedelta_from_str, ti
 from mvcs.job import Video
 from mvcs.error import Error
 
-def generate_template(document):
+def generate_template(document, output_dir, video_dir):
     # Example YAML
     data = {
-        'video-dir': 'c:/OBS Captures',
-        'output-dir': 'c:/OBS Clips',
+        'video-dir': str(video_dir),
+        'output-dir': str(output_dir),
         'videos': []
     }
 
@@ -69,15 +69,15 @@ def generate_template(document):
     yaml.safe_dump(data, stream)
     stream.close()
 
-def check_template(document):
+def check_template(document, output_dir, video_dir):
     print("Checking for template: " + str(document))
     if os.path.isfile(document):
         print('YAML File detected.')
 
     else:
         print('Generating the file for you.')
-        generate_template(document)
-        check_template(document)
+        generate_template(document, output_dir, video_dir)
+        check_template(document, output_dir, video_dir)
 
 # def path_str(self, date: datetime.datetime, epoch: datetime.timedelta, title: str) -> str:
 #     date_str = (date + epoch).strftime("%Y-%m-%d %H:%M:%S")
