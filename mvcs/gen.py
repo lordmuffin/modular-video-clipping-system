@@ -99,31 +99,8 @@ def latest_video(config: Config, date_time, extension, path):
 
         video_list.append(video)
 
-    latest = max(video for video in video_list if video.date < date_time)
-
-    # file_object = {'files': []}
-    # date_list = []
-
-    # for item in extension:
-    #     item = os.path.splitext(item)[0]
-    #     item_datetime = datetime_from_obs_name(item)
-    #     item_json = {
-    #         'filename': item,
-    #         'datetime': item_datetime
-    #     }
-    #     file_object['files']
-    #     # file_object['filename'][item][0] = item_datetime
-    #     # print(item)
-    #     if item_datetime <= date_time:
-    #         date_list.append(item)
-    # print(file_object)
-    # latest = max(date_list)
-    # print(latest)
-
-    # print(max(file_list))
-    # youngest = max(dt for dt in extension if dt < str(date_time))
-    # print(youngest)
-    return latest
+    video_list = sorted(video_list, key=lambda x: x.date)
+    return video_list[-1]
 
 def add_video(document, date_time, epoch, title):
     date_time = datetime_to_str(date_time.date)
