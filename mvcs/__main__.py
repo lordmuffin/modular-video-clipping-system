@@ -11,7 +11,7 @@ import mvcs
 def handle_clip(_config: mvcs.Config):
     "Handle the clip subcommand."
 
-    yaml = "clip.yaml"
+    yaml = "videos.yaml"
 
     mvcs.gen.check_template(yaml)
     print(_config.video_dir)
@@ -24,18 +24,12 @@ def handle_clip(_config: mvcs.Config):
         0,
         "Video"
     )
-    # mvcs.gen.add_clip(
-    #     yaml,
-    #     latest,
-    #     0,
-    #     "CLIP IT!",
-    # )
     mvcs.gen.trigger_clip(
       _config,
       latest,
       10,
       10,
-      "video.yaml",
+      yaml,
       latest,
       "CLIP IT!",
     )

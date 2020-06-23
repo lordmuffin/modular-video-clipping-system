@@ -52,7 +52,7 @@ from datetime import datetime
 from datetime import timedelta
 import pathlib
 from mvcs.config import Config
-from mvcs.time import datetime_from_str, datetime_from_obs_name, timedelta_from_str, timedelta_to_path_str
+from mvcs.time import datetime_from_str, datetime_to_str, timedelta_from_str, timedelta_to_str, timedelta_to_path_str
 from mvcs.job import Video
 from mvcs.error import Error
 
@@ -126,19 +126,17 @@ def latest_video(config: Config, date_time, extension, path):
     return latest
 
 def add_video(document, date_time, epoch, title):
+    date_time = datetime_to_str(date_time.date)
+    print(date_time)
+    print(type(date_time))
     with open(document, "r") as f:
         contents = yaml.safe_load(f)
 
+    print(contents['videos'])
     # Check for existing video.
 
-    if contents['videos']:
-        for video in contents['videos']:
-            if video['date'] == date_time:
-                print("Found Existing Video.")
-
-                return "Found Existing Video."
-    
-    else:
+    if not contents['videos']:
+        print("videos is empty")
         # Add Video
         print("Before: ", contents)
         print(date_time)
@@ -148,7 +146,7 @@ def add_video(document, date_time, epoch, title):
             'title': title,
             'clips': []
         }
-
+                
         contents['videos'].append(data)
         print("After: ", contents)
 
@@ -156,8 +154,41 @@ def add_video(document, date_time, epoch, title):
             yaml.safe_dump(contents, f)
 
         return date_time
+        print("End of video function.")
+
+    if contents['videos']:
+        print("Starting with Videos.")
+        for video in contents['videos']:
+            print(video)
+            print("Vidoes Section Exists.")
+            if video['date'] == date_time:
+                print("Found Existing Video.")
+
+                return "Found Existing Video."
+        
+            else:
+                print("Running else statement!!!")
+                # Add Video
+                print("Before: ", contents)
+                print(date_time)
+                data = {
+                    'date': date_time,
+                    'epoch': epoch,
+                    'title': title,
+                    'clips': []
+                }
+
+                contents['videos'].append(data)
+                print("After: ", contents)
+
+                with open(document, "w") as f:
+                    yaml.safe_dump(contents, f)
+
+                return date_time
+                print("End of video function.")
 
 def add_clip(document, latest_video, window, title):
+    print("Clipping")
     with open(document, "r") as f:
         contents = yaml.safe_load(f)
 
@@ -167,7 +198,7 @@ def add_clip(document, latest_video, window, title):
     }
 
     for item in contents['videos']:
-        if item['date'] == latest_video.date:
+        if item['date'] == datetime_to_str(latest_video.date):
             print("Before: ", str(item))
             item['clips'].append(data)
             print("After: ", str(item))
@@ -187,18 +218,22 @@ def trigger_clip(config: Config, video_time, clip_before_length, clip_after_leng
     print("Relative Time: {}".format(relative_time))
 
     start_window = relative_time - clip_before_length
-    start_window = start_window.strftime("%H:%M:%S")
+    start_window = timedelta_to_str(start_window)
 
     end_window = relative_time + clip_after_length
+    end_window = timedelta_to_str(end_window)
+
 
     print("Start Window: {}".format(start_window))
     print("End Window: {}".format(end_window))
 
     # # Fix if less than 0
-    # if start_window <= time.isoformat:
-    #     start_window = time
+    # if start_window <= 0:
+    #     start_window = 0
 
     window = str(start_window) + " - " + str(end_window)
     print("Window: {}".format(window))
 
-    # add_clip(document, latest_video, window, title)
+    print(type(latest_video.date))
+    
+    add_clip(document, latest_video, window, title)
