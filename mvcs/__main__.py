@@ -13,7 +13,7 @@ def handle_clip(config: mvcs.Config):
 
     yaml = config.job_path
 
-    mvcs.gen.check_template(yaml)
+    mvcs.gen.check_template(yaml, config.output_dir, config.video_dir)
     print(config.video_dir)
     print(config.video_ext)
     # print(mvcs.gen.current_time())
