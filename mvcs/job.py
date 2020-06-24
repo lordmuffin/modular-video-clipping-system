@@ -60,7 +60,10 @@ class Clip(NamedTuple):
             f"{self.title}",
         )).casefold()
 
-        for (old, new) in chain((("/", "-"), (":", "-")), config.filename_replace.items()):
+        for (old, new) in chain(
+                ((bad, "-") for bad in "\"*/:?\\|<>"),
+                config.filename_replace.items(),
+        ):
             path_str = path_str.replace(old, new)
 
         return ".".join((path_str, config.output_ext))
