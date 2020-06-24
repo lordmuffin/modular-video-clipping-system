@@ -120,14 +120,14 @@ def test_clip_from_dict_invalid(data):
         "test",
         "1970-01-01 00-00-03 - t+0h00m00s - test - title.mkv",
     ),
-    # Problematic characters are munged (colon and slash) and lowercased
+    # Problematic characters are munged and lowercased
     (
-        Clip.from_dict({"time": "0-1", "title": "THIS: is/bad"}),
+        Clip.from_dict({"time": "0-1", "title": "THIS? is/bad"}),
         Config.default(),
         datetime.datetime(1970, 1, 1),
         datetime.timedelta(),
-        "NOT/GOOD/AT:ALL:::HERE",
-        "1970-01-01 00-00-00 - t+0h00m00s - not-good-at-all---here - this- is-bad.mkv",
+        "NOT/VERY|GOOD<AT>\\ALL:*\"HERE?",
+        "1970-01-01 00-00-00 - t+0h00m00s - not-very-good-at--all---here- - this- is-bad.mkv",
     ),
     # The output filename respects the config
     (
